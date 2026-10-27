@@ -1,4 +1,4 @@
-# Estado real de la versión 0.0.1
+# Estado real de la versión 0.0.2
 
 Este documento existe porque es fácil confundir "está documentado" con "está
 implementado". Acá está la línea entre las dos cosas, sin adornos.
@@ -28,7 +28,19 @@ implementado". Acá está la línea entre las dos cosas, sin adornos.
   verificadas: sin clipping (pico 0,71), RMS ≈ 0,19–0,23, dinámica por segundo
   real, contenido armónico (ZCR 478–1480 Hz), duraciones 23–51 s.
 - **Arte del README.** Generado por código (`tools/make_brand_art.py`), sin
-  material de Capcom.
+  material de Capcom. Desde la 0.0.2 las cinco láminas y la placa de arranque
+  son 1920×1080 (16:9), y el icono de launcher se genera desde el mismo código.
+- **16:9 activo por defecto.** El paquete
+  `megaman-x3.enhancement.widescreen` declara `default_enabled = true`; el
+  catálogo viaja en los zips de escritorio y en los assets del APK. La
+  geometría táctil se mide en unidades del lado corto y pasa sus pruebas en
+  16:9, 19.5:9, 20:9 y 4:3.
+- **APK Android compilado y firmado.** `tools/build_android.sh arm64-v8a`
+  compiló `libMegaManX3SNESRecomp.so` (host LLE sin código del ROM) con SDK 34
+  y NDK r27, y `gradle assembleRelease` produjo un APK de 5,5 MB, `versionCode
+  2`, `versionName 0.0.2`, firmado y verificado con `aapt` y `apksigner`. El
+  APK contiene el `.so`, `assets/mods/...` y la placa 16:9. **No se ejecutó en
+  un dispositivo**: el entorno no tiene teléfono ni emulador.
 - **CI de escritorio en tres plataformas.** El workflow `Release` compiló el
   setup host en Linux, Windows y macOS en runners reales, y los tres `.zip`
   quedaron adjuntos a la release `v0.0.1`. El gate `Desktop host` corrió verde
@@ -36,11 +48,13 @@ implementado". Acá está la línea entre las dos cosas, sin adornos.
 
 ## Lo que está escrito pero NO ejecutado
 
-- **La app Android.** `android/` existe, con actividades, capa táctil y puente
-  JNI, pero en la máquina donde se preparó esto no hay SDK ni NDK: nunca se
-  compiló ni se ejecutó en un teléfono. El job de CI de Android es manual,
-  experimental y marcado `continue-on-error` por eso mismo. Tampoco se ha
-  corrido.
+- **La app Android en un dispositivo.** El APK compila, se firma y se
+  empaqueta, pero nunca se instaló ni se abrió en un teléfono. El primer
+  arranque real —y el rendimiento del intérprete en ARM— es la verificación que
+  falta.
+- **El envío de toques al guest.** La capa táctil dibuja y calcula la máscara
+  de 12 bits, pero el estado del pad es privado de `host_main.c`; no hay API
+  de inyección. Con mando Bluetooth sí se juega.
 - **`rom-build.yml`.** Es el workflow que arma el binario jugable leyendo tu
   ROM desde un secreto. Está escrito y valida el SHA-256 antes de compilar,
   pero nunca se ejecutó: requiere que el dueño del repositorio cargue
@@ -72,14 +86,16 @@ una tarde, y requiere:
 5. **Pruebas**: jugar las ocho etapas completas, en orden de debilidades y en
    orden libre, para descartar callejones sin salida.
 
-Lo que sí entrega la 0.0.1 es todo el andamiaje alrededor de eso: identidad,
-historia, guion, diseño de jefes y cápsulas, arte, banda sonora, capa táctil
-probada, soporte de mando y CI multiplataforma — más el motor real compilando.
+Lo que sí entrega la 0.0.2 es todo el andamiaje alrededor de eso: identidad,
+historia, guion, diseño de jefes y cápsulas, arte 16:9, banda sonora, capa
+táctil probada, soporte de mando, APK Android y CI multiplataforma — más el
+motor real compilando.
 
 ## Orden sugerido para seguir
 
 1. Exponer `snesrecomp_desktop_set_pad_mask()` en el host y cerrar el lazo
    táctil. Es el cambio más chico con el mayor efecto verificable.
-2. Validar el build Android en CI (primero que compile, después que arranque).
+2. Instalar el APK en un teléfono real y medir el intérprete en ARM; el
+   empaquetado ya está verificado, la ejecución no.
 3. Conectar el barajado de cápsulas a la tabla de objetos de etapa.
 4. Recién ahí, arte y jefes nuevos: es el trabajo largo.

@@ -16,6 +16,9 @@ final class TouchBridge {
     static native void nativeUpTouch(long id);
     static native void nativeReleaseAll();
 
+    /** Rebuild the C layout for the real surface (16:9, 19.5:9, 20:9, ...). */
+    static native void nativeSetAspect(float aspect);
+
     /** Máscara de 12 bits vigente, para que el host la consuma por frame. */
     static native int nativeMask();
 

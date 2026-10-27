@@ -10,8 +10,24 @@ Implemented for Mega Man X3 (USA):
 - widescreen-aware enemy activation, visibility, drawing, and camera triggers;
 - unchanged 4:3 output when the feature is disabled.
 
-The launcher exposes the widescreen option. The embedded default remains
-`Widescreen = 0`, so a new install starts in authentic 4:3 until selected.
+The launcher exposes the widescreen option. Since v0.0.2 the bundled package
+(`mods/preloaded/packages/megaman-x3.enhancement.widescreen`) declares
+`default_enabled = true`, so a new install starts at 16:9 on every platform.
+Turning Widescreen off in the launcher restores authentic 4:3 output.
+
+### Android
+
+The APK is a ROM-free LLE host (see `docs/ANDROID.md`). It boots edge to edge
+in immersive `sensorLandscape` with `layoutInDisplayCutoutMode = shortEdges`,
+so the 342x224 field reaches the display edges around a notch. On 19.5:9 or
+20:9 panels the field stays 16:9 and centred; the extra width is system
+letterboxing, never stretched pixels. The touch overlay measures its keys in
+short-edge units (`X3Touch_SetAspect`, `TouchOverlay.rectFor`), so a key is
+square at 16:9, 19.5:9, 20:9 and 4:3 instead of stretching with the window.
+
+The Android package carries the same catalog as the desktop zip and extracts
+it to the app's external files directory on first launch; without that step
+the mod runtime would not find the package and the build would stay 4:3.
 
 ## Mega Man X2 correspondence
 

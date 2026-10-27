@@ -1,12 +1,13 @@
 name: Release
 
 # Publica el artefacto de una etiqueta v*: host de escritorio para Linux,
-# Windows y macOS, más el arte y la banda sonora del proyecto.
+# Windows y macOS, el APK de Android, más el arte y la banda sonora.
 #
 # ADVERTENCIA LEGAL: este repositorio no contiene ni distribuye el ROM. Los
-# binarios publicados acá son el *setup host* (sin código de invitado); cada
-# jugador compila su propia versión jugable con su propio dump. Ver
-# docs/ESTADO.md § "Lo que NO existe".
+# binarios de escritorio son el *setup host* (sin código de invitado); cada
+# jugador compila su propia versión jugable con su propio dump. El APK es un
+# host LLE sin código derivado del ROM: el jugador pone su mmx3.sfc en el
+# almacenamiento de la app. Ver docs/ESTADO.md y docs/ANDROID.md.
 
 on:
   push:
@@ -14,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Etiqueta a publicar (ej. v0.0.1)'
+        description: 'Etiqueta a publicar (ej. v0.0.2)'
         required: true
 
 permissions:
@@ -88,6 +89,9 @@ jobs:
           mkdir -p dist/audio dist/img
           cp assets/audio/*.ogg dist/audio/ 2>/dev/null || true
           cp docs/img/*.png dist/img/ 2>/dev/null || true
+          # El catálogo de mods viaja con el ejecutable: el runtime lo lee de
+          # mods/preloaded/packages, y sin él el 16:9 queda deshabilitado.
+          cp -r build/mods dist/mods 2>/dev/null || true
           # zip existe en Linux y macOS; Git Bash en Windows no lo trae, pero
           # sí bsdtar, que con -a arma un .zip a partir de la extension.
           cd dist
@@ -104,9 +108,64 @@ jobs:
           path: ${{ matrix.artifact }}.zip
           if-no-files-found: error
 
+  android:
+    name: Android arm64-v8a
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Instalar NDK r27 y CMake
+        run: |
+          sdkmanager "ndk;27.0.12077973" "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> "$GITHUB_ENV"
+
+      - name: Instalar ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restaurar keystore de firma (opcional)
+        env:
+          KEYSTORE_B64: ${{ secrets.MMX_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.MMX_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.MMX_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/mmx-release.jks"
+            {
+              echo "MMX_KEYSTORE=$RUNNER_TEMP/mmx-release.jks"
+              echo "MMX_KEYSTORE_PASSWORD=$STORE_PASSWORD"
+              echo "MMX_KEY_PASSWORD=$KEY_PASSWORD"
+            } >> "$GITHUB_ENV"
+          else
+            echo "::notice::MMX_KEYSTORE_BASE64 no configurado: se firma con una clave efímera."
+          fi
+
+      - name: Compilar APK (host LLE sin ROM)
+        run: |
+          mkdir -p "$RUNNER_TEMP/toolchains"
+          MMX_TOOLCHAIN_DIR="$RUNNER_TEMP/toolchains" \
+            bash tools/build_android.sh arm64-v8a
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MMXZeroHistory-android-arm64-v8a
+          path: dist/*.apk
+          if-no-files-found: error
+
   publish:
     name: Publicar release
-    needs: build
+    needs: [build, android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -119,7 +178,9 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: MMX Zero History ${{ github.event.inputs.tag || github.ref_name }}
-          body_path: RELEASE_NOTES_v0.0.1.md
-          files: artifacts/*.zip
+          body_path: RELEASE_NOTES_v0.0.2.md
+          files: |
+            artifacts/*.zip
+            artifacts/*.apk
           draft: false
           prerelease: false

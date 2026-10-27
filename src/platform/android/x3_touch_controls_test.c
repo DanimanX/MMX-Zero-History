@@ -135,6 +135,72 @@ static void test_mirror_is_a_toggle(void) {
   for (int i = 0; i < a.count; ++i) CHECK(a.buttons[i].x == b.buttons[i].x);
 }
 
+static int is_square_bit(int bit) {
+  switch (bit) {
+    case X3_BIT_UP:
+    case X3_BIT_DOWN:
+    case X3_BIT_LEFT:
+    case X3_BIT_RIGHT:
+    case X3_BIT_Y:
+    case X3_BIT_B:
+    case X3_BIT_A:
+    case X3_BIT_X:
+    case X3_BIT_SELECT:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+static void test_keys_are_square_at_every_aspect(void) {
+  const float aspects[] = {16.0f / 9.0f, 19.5f / 9.0f, 20.0f / 9.0f,
+                           4.0f / 3.0f, 1.0f};
+  for (unsigned a = 0; a < sizeof(aspects) / sizeof(aspects[0]); ++a) {
+    X3TouchLayout l;
+    X3Touch_DefaultLayout(&l);
+    X3Touch_SetAspect(&l, aspects[a]);
+    for (int i = 0; i < l.count; ++i) {
+      const X3TouchButton *b = &l.buttons[i];
+      /* Normalised width times the aspect gives the size in short-edge
+       * units; it must equal the normalised height. */
+      float px = b->w * aspects[a];
+      float py = b->h;
+      float d = px > py ? px - py : py - px;
+      if (is_square_bit(b->bit)) {
+        if (d > 1e-4f) {
+          printf("  aspect %.2f button %d: %.4f x %.4f units\n",
+                 aspects[a], b->bit, px, py);
+        }
+        CHECK(d <= 1e-4f);
+      }
+      CHECK(b->x >= 0.0f);
+      CHECK(b->y >= 0.0f);
+      CHECK(b->x + b->w <= 1.0f);
+      CHECK(b->y + b->h <= 1.0f);
+    }
+  }
+}
+
+static void test_aspect_change_keeps_mirror_and_hits(void) {
+  X3TouchLayout l;
+  X3Touch_DefaultLayout(&l);
+  X3Touch_SetMirrored(&l, 1);
+  X3Touch_SetAspect(&l, 20.0f / 9.0f);
+  CHECK(l.mirrored == 1);
+  for (int i = 0; i < l.count; ++i) {
+    const X3TouchButton *b = &l.buttons[i];
+    uint16_t got = X3Touch_HitTest(&l, b->x + b->w * 0.5f,
+                                   b->y + b->h * 0.5f);
+    CHECK(got == (uint16_t)(1u << b->bit));
+  }
+  /* An invalid aspect falls back to 16:9 rather than producing a zero-size
+   * or inverted key. */
+  X3Touch_SetAspect(&l, 0.0f);
+  CHECK(l.aspect > 1.7f && l.aspect < 1.8f);
+  X3Touch_SetAspect(&l, 99.0f);
+  CHECK(l.aspect > 1.7f && l.aspect < 1.8f);
+}
+
 static void test_mirrored_hits_still_work(void) {
   X3TouchLayout l;
   X3Touch_DefaultLayout(&l);
@@ -279,6 +345,8 @@ int main(void) {
   test_diagonals_read_as_two_keys();
   test_all_buttons_inside_screen();
   test_mirror_is_a_toggle();
+  test_keys_are_square_at_every_aspect();
+  test_aspect_change_keeps_mirror_and_hits();
   test_mirrored_hits_still_work();
   test_two_fingers_hold_two_directions();
   test_two_fingers_on_one_button();

@@ -5,22 +5,35 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- El mando externo no requiere permiso; el manifiesto solo lo declara
-         como característica opcional para que la app se instale igual. -->
+         como característica opcional para que la app se instale igual. La
+         pantalla táctil tampoco es obligatoria: en Android TV o con un mando
+         conectado se puede jugar sin ella. -->
     <uses-feature android:name="android.hardware.gamepad" android:required="false" />
-    <uses-feature android:name="android.hardware.touchscreen" android:required="true" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
     <application
         android:label="MMX Zero History"
-        android:icon="@android:drawable/sym_def_app_icon"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:hardwareAccelerated="true"
         android:allowBackup="false"
-        android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+        android:resizeableActivity="true"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
+        android:appCategory="game"
+        android:theme="@style/AppTheme">
 
+        <!-- sensorLandscape + resizeable: la actividad acepta cualquier
+             relación de aspecto en horizontal (16:9, 19.5:9, 20:9) y el
+             motor decide el ancho de campo. configChanges evita recrear la
+             actividad (y perder el estado del juego) al girar o al
+             mostrar/ocultar las barras del sistema. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="sensorLandscape"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
+            android:resizeableActivity="true"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|navigation"
             android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

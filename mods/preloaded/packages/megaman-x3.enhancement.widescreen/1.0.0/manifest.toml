@@ -17,7 +17,7 @@ id = "widescreen"
 name = "Widescreen (16:9)"
 description = "Enable Mega Man X3's game-specific 16:9 rendering enhancement."
 group = "Display"
-default_enabled = false
+default_enabled = true
 
 [[plugin]]
 feature = "widescreen"

@@ -86,6 +86,21 @@ orden de etapas deja al jugador sin respuesta.
 
 Patrones de ataque, fases y drops en [`docs/MAVERICKS.md`](docs/MAVERICKS.md).
 
+## 16:9 en todas las versiones
+
+Desde la 0.0.2 el campo de juego es 16:9 en Linux, Windows, macOS y Android.
+El motor renderiza 342×224 píxeles reales —el máximo que cabe con la relación
+de píxel 7:6 de SNES— y rellena las columnas nuevas con los tiles auténticos
+de BG1 y BG2; el HUD del jugador se ancla a la izquierda y el del jefe a la
+derecha. El paquete `megaman-x3.enhancement.widescreen` viene **habilitado por
+defecto** y se puede apagar desde el launcher (Mods → Widescreen).
+
+Los assets, la placa de arranque y el icono se rediseñaron en 16:9
+(1920×1080). En Android el modo es inmersivo de borde a borde, con
+`layoutInDisplayCutoutMode = shortEdges`; en pantallas 19.5:9 o 20:9 la imagen
+sigue siendo 16:9 centrada, no estirada, y los controles táctiles se miden en
+unidades del lado corto para seguir cuadrados en cualquier relación de aspecto.
+
 ## Cápsulas errantes
 
 Ninguna cápsula tiene posición fija. Cada etapa tiene **tres nichos**
@@ -135,23 +150,44 @@ al motor en [`docs/MUSICA.md`](docs/MUSICA.md).
 - **Linux / Windows / macOS** — host de escritorio SDL2, con soporte real de
   mando por `SDL_GameController` (Xbox, DualShock, 8BitDo) y teclado
   remapeable en `keybinds.ini`.
-- **Android** — andamiaje con controles táctiles (D-pad, rombo SNES, hombros,
-  start), auto-ocultado al conectar un mando y zona muerta configurable.
+- **Android** — APK arm64-v8a con controles táctiles (D-pad, rombo SNES,
+  hombros, start), auto-ocultado al conectar un mando y geometría cuadrada en
+  cualquier aspecto.
 
 ![Android](docs/img/android.png)
 
-La **lógica táctil** sí está probada en el escritorio (15 pruebas: dos dedos a
+### APK de Android
+
+Cada release publica `MMXZeroHistory-android-arm64-v8a.apk`. Es un host LLE
+sin código derivado del ROM: el binario no trae el juego, lo carga desde tu
+dump. Para jugar:
+
+1. Instalá el APK (Android 7.0+, arm64).
+2. Copiá tu `mmx3.sfc` a `Android/data/cl.zerohistory.mmx/files/`.
+3. Abrí la app. El catálogo de mods se extrae solo en el primer arranque y el
+   16:9 queda activo.
+
+El APK se compila, se firma y se verifica su empaquetado (`aapt`, `apksigner`,
+contenido), pero **no se ejecutó en un dispositivo en este repositorio**. La
+capa táctil se dibuja con geometría 16:9 y produce la máscara de botones, pero
+el envío al guest sigue pendiente porque el estado del pad es privado del host:
+para jugar hoy hace falta un mando Bluetooth. La receta completa, con las
+dependencias y el modo sin ROM, está en [`docs/ANDROID.md`](docs/ANDROID.md).
+
+La **lógica táctil** sí está probada en el escritorio (17 pruebas: dos dedos a
 la vez, dos dedos en el mismo botón, latcheo al deslizar, saturación de la
-tabla de dedos, espejado exacto):
+tabla de dedos, espejado exacto y teclas cuadradas en 16:9, 19.5:9, 20:9 y
+4:3):
 
 ```console
 bash tools/test_touch_controls.sh
 ```
 
-La **app Android no está verificada**: se escribió sin SDK ni NDK disponible en
-la máquina de desarrollo y nunca se ejecutó en un dispositivo. Los pasos que
-faltan están enumerados en [`docs/ANDROID.md`](docs/ANDROID.md) y
-[`docs/ESTADO.md`](docs/ESTADO.md).
+El APK se construye con:
+
+```console
+bash tools/build_android.sh arm64-v8a
+```
 
 ## Build
 
@@ -181,19 +217,20 @@ cmake --build build --target MegaManX3SNESRecomp
 - **`rom-build.yml`** — **manual**. Compila el binario jugable en Linux,
   Windows y macOS leyendo tu ROM desde el secreto `MMX3_ROM_BASE64`, que nunca
   entra al repositorio. Verifica el SHA-256 antes de aceptar el archivo.
-- **`android.yml`** — **manual y experimental**. Marcado con
-  `continue-on-error`: puede fallar sin romper nada mientras se itera.
+- **`android.yml`** — **manual**. Compila el APK de un ABI concreto con
+  `tools/build_android.sh` y lo deja como artefacto. No necesita el ROM.
 - **`release.yml`** — al empujar una etiqueta `v*`, publica los paquetes de las
-  tres plataformas de escritorio con arte, banda sonora y el aviso de ROM.
+  tres plataformas de escritorio, el **APK de Android**, arte, banda sonora y
+  el aviso de ROM.
 
-Estado de cada uno al publicar la 0.0.1:
+Estado de cada uno al publicar la 0.0.2:
 
 - **Desktop host (Linux)**: verde — pruebas + compilación, corrida real en CI.
-- **Release**: verde en las tres plataformas. La etiqueta `v0.0.1` publicó
-  `MMXZeroHistory-linux-x86_64.zip`, `-windows-x86_64.zip` y `-macos-arm64.zip`
-  construidos en runners reales.
+- **Release**: publica los tres `.zip` de escritorio y el APK arm64-v8a, con el
+  catálogo de mods incluido para que el 16:9 viaje activo.
+- **Android**: `tools/build_android.sh` compiló el APK en esta máquina con SDK
+  34 / NDK r27 y lo firmó; el workflow `Android` corre el mismo paso.
 - **rom-build**: escrito, nunca corrido (necesita el secreto con tu ROM).
-- **Android**: escrito, nunca corrido con éxito confirmado.
 
 ## Estado
 

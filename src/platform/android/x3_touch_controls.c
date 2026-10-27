@@ -3,6 +3,9 @@
 
 #include <string.h>
 
+/* All sizes are short-edge (height) units: a key authored at half = 0.070
+ * occupies 14% of the short edge on any display, so it stays square instead
+ * of stretching with the window. Positions stay normalised 0..1. */
 #define X3_DPAD_CX 0.155f
 #define X3_DPAD_CY 0.760f
 /* One d-pad key is HALF wide; the four keys are placed ARM away from the
@@ -16,15 +19,23 @@
 #define X3_FACE_CY 0.760f
 #define X3_FACE_OFF 0.085f
 #define X3_FACE_RAD 0.056f
-#define X3_SHOULDER_W 0.098f
+#define X3_SHOULDER_W 0.174f
 #define X3_SHOULDER_H 0.070f
 #define X3_SHOULDER_Y 0.578f
-#define X3_START_W 0.108f
+#define X3_START_W 0.192f
 #define X3_START_H 0.062f
 #define X3_START_Y 0.640f
+#define X3_SELECT_CY 0.870f
+#define X3_SELECT_RAD 0.045f
 
 static void put(X3TouchLayout *l, float x, float y, float w, float h, int bit) {
   if (l->count >= X3_TOUCH_MAX_BUTTONS) return;
+  /* Keep every key inside the surface even at extreme aspects: a shoulder
+   * authored for 16:9 would otherwise poke past the right edge at 1:1. */
+  if (x < 0.0f) x = 0.0f;
+  if (y < 0.0f) y = 0.0f;
+  if (x + w > 1.0f) x = 1.0f - w;
+  if (y + h > 1.0f) y = 1.0f - h;
   X3TouchButton *b = &l->buttons[l->count];
   l->authored_x[l->count] = x;
   ++l->count;
@@ -35,52 +46,77 @@ static void put(X3TouchLayout *l, float x, float y, float w, float h, int bit) {
   b->bit = bit;
 }
 
-/* Square region centred on (cx, cy) with half-extent half. */
-static void put_centred(X3TouchLayout *l, float cx, float cy, float half,
-                        int bit) {
-  put(l, cx - half, cy - half, half * 2.0f, half * 2.0f, bit);
+/* Square key centred on (cx, cy); half is in short-edge units. */
+static void put_square(X3TouchLayout *l, float cx, float cy, float half,
+                       int bit) {
+  float h = half * 2.0f;
+  float w = h / l->aspect;
+  put(l, cx - w * 0.5f, cy - h * 0.5f, w, h, bit);
+}
+
+/* Rectangular key centred on (cx, cy); wu/hu are short-edge units. */
+static void put_units(X3TouchLayout *l, float cx, float cy, float wu,
+                      float hu, int bit) {
+  float w = wu / l->aspect;
+  put(l, cx - w * 0.5f, cy - hu * 0.5f, w, hu, bit);
+}
+
+static void build_layout(X3TouchLayout *layout, float aspect) {
+  memset(layout, 0, sizeof(*layout));
+  layout->aspect = aspect;
+  layout->opacity = 55;
+
+  /* A horizontal offset of one short-edge unit is 1/aspect in normalised x. */
+  const float xu = 1.0f / aspect;
+
+  /* D-pad: four discrete keys, not a virtual stick. X3 is a D-pad game and
+   * an analogue stick mapped to four directions eats diagonal inputs. */
+  put_square(layout, X3_DPAD_CX, X3_DPAD_CY - X3_DPAD_ARM, X3_DPAD_HALF,
+             X3_BIT_UP);
+  put_square(layout, X3_DPAD_CX, X3_DPAD_CY + X3_DPAD_ARM, X3_DPAD_HALF,
+             X3_BIT_DOWN);
+  put_square(layout, X3_DPAD_CX - X3_DPAD_ARM * xu, X3_DPAD_CY,
+             X3_DPAD_HALF, X3_BIT_LEFT);
+  put_square(layout, X3_DPAD_CX + X3_DPAD_ARM * xu, X3_DPAD_CY,
+             X3_DPAD_HALF, X3_BIT_RIGHT);
+
+  /* Face buttons in the SNES diamond: Y top, B right, A bottom, X left. */
+  put_square(layout, X3_FACE_CX, X3_FACE_CY - X3_FACE_OFF, X3_FACE_RAD,
+             X3_BIT_Y);
+  put_square(layout, X3_FACE_CX + X3_FACE_OFF * xu, X3_FACE_CY, X3_FACE_RAD,
+             X3_BIT_B);
+  put_square(layout, X3_FACE_CX, X3_FACE_CY + X3_FACE_OFF, X3_FACE_RAD,
+             X3_BIT_A);
+  put_square(layout, X3_FACE_CX - X3_FACE_OFF * xu, X3_FACE_CY, X3_FACE_RAD,
+             X3_BIT_X);
+
+  /* Shoulders, above the diamond and aligned with its columns. */
+  put_units(layout, X3_FACE_CX - X3_FACE_OFF * xu, X3_SHOULDER_Y,
+            X3_SHOULDER_W, X3_SHOULDER_H, X3_BIT_L);
+  put_units(layout, X3_FACE_CX + X3_FACE_OFF * xu, X3_SHOULDER_Y,
+            X3_SHOULDER_W, X3_SHOULDER_H, X3_BIT_R);
+
+  /* Start: centred, small, out of the play area. */
+  put_units(layout, 0.5f, X3_START_Y, X3_START_W, X3_START_H, X3_BIT_START);
+
+  /* Select: lower centre, rarely used but unavoidable in some menus. */
+  put_square(layout, 0.5f, X3_SELECT_CY, X3_SELECT_RAD, X3_BIT_SELECT);
 }
 
 void X3Touch_DefaultLayout(X3TouchLayout *layout) {
   if (!layout) return;
-  memset(layout, 0, sizeof(*layout));
-  layout->opacity = 55;
+  build_layout(layout, X3_TOUCH_DEFAULT_ASPECT);
+}
 
-  /* D-pad: four discrete keys, not a virtual stick. X3 is a D-pad game and
-   * an analogue stick mapped to four directions eats diagonal inputs. */
-  put_centred(layout, X3_DPAD_CX, X3_DPAD_CY - X3_DPAD_ARM, X3_DPAD_HALF,
-              X3_BIT_UP);
-  put_centred(layout, X3_DPAD_CX, X3_DPAD_CY + X3_DPAD_ARM, X3_DPAD_HALF,
-              X3_BIT_DOWN);
-  put_centred(layout, X3_DPAD_CX - X3_DPAD_ARM, X3_DPAD_CY, X3_DPAD_HALF,
-              X3_BIT_LEFT);
-  put_centred(layout, X3_DPAD_CX + X3_DPAD_ARM, X3_DPAD_CY, X3_DPAD_HALF,
-              X3_BIT_RIGHT);
-
-  /* Face buttons in the SNES diamond: Y top, B right, A bottom, X left. */
-  put_centred(layout, X3_FACE_CX, X3_FACE_CY - X3_FACE_OFF, X3_FACE_RAD,
-              X3_BIT_Y);
-  put_centred(layout, X3_FACE_CX + X3_FACE_OFF, X3_FACE_CY, X3_FACE_RAD,
-              X3_BIT_B);
-  put_centred(layout, X3_FACE_CX, X3_FACE_CY + X3_FACE_OFF, X3_FACE_RAD,
-              X3_BIT_A);
-  put_centred(layout, X3_FACE_CX - X3_FACE_OFF, X3_FACE_CY, X3_FACE_RAD,
-              X3_BIT_X);
-
-  /* Shoulders, above the diamond. */
-  put(layout, X3_FACE_CX - X3_FACE_OFF - X3_SHOULDER_W * 0.5f,
-      X3_SHOULDER_Y - X3_SHOULDER_H * 0.5f, X3_SHOULDER_W, X3_SHOULDER_H,
-      X3_BIT_L);
-  put(layout, X3_FACE_CX + X3_FACE_OFF - X3_SHOULDER_W * 0.5f,
-      X3_SHOULDER_Y - X3_SHOULDER_H * 0.5f, X3_SHOULDER_W, X3_SHOULDER_H,
-      X3_BIT_R);
-
-  /* Start: centred, small, out of the play area. */
-  put(layout, 0.5f - X3_START_W * 0.5f, X3_START_Y - X3_START_H * 0.5f,
-      X3_START_W, X3_START_H, X3_BIT_START);
-
-  /* Select: lower centre-left, rarely used but unavoidable in some menus. */
-  put_centred(layout, 0.5f, 0.870f, 0.045f, X3_BIT_SELECT);
+void X3Touch_SetAspect(X3TouchLayout *layout, float aspect) {
+  if (!layout) return;
+  if (!(aspect >= X3_TOUCH_MIN_ASPECT && aspect <= X3_TOUCH_MAX_ASPECT))
+    aspect = X3_TOUCH_DEFAULT_ASPECT;
+  int mirrored = layout->mirrored;
+  int opacity = layout->opacity;
+  build_layout(layout, aspect);
+  if (opacity > 0) layout->opacity = opacity;
+  if (mirrored) X3Touch_SetMirrored(layout, 1);
 }
 
 void X3Touch_SetMirrored(X3TouchLayout *layout, int mirrored) {

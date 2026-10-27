@@ -22,6 +22,14 @@ extern "C" {
 #define X3_TOUCH_MAX_BUTTONS 12
 #define X3_TOUCH_MAX_FINGERS 10
 
+/* The layout is authored at 16:9 and every key size is expressed in
+ * short-edge (height) units. A key therefore stays square in pixels on any
+ * display aspect -- 16:9, 19.5:9, 20:9 -- instead of stretching with the
+ * window. X3Touch_SetAspect rebuilds the boxes for the real surface. */
+#define X3_TOUCH_DEFAULT_ASPECT (16.0f / 9.0f)
+#define X3_TOUCH_MIN_ASPECT 0.20f
+#define X3_TOUCH_MAX_ASPECT 8.00f
+
 typedef enum {
   X3_BIT_R = 0,
   X3_BIT_L = 1,
@@ -55,6 +63,9 @@ typedef struct {
   int mirrored;
   /* 0..100, presentation only: the binding logic never reads this. */
   int opacity;
+  /* Surface width / height. Sizes are short-edge units; positions stay
+   * normalised 0..1. Rebuilding for a new aspect keeps the keys square. */
+  float aspect;
 } X3TouchLayout;
 
 /* A lit bit and the finger holding it. */
@@ -73,8 +84,13 @@ typedef struct {
 } X3TouchTracker;
 
 /* Fill a default layout: D-pad bottom-left, face diamond bottom-right,
- * shoulders above the diamond, start centred near the bottom. */
+ * shoulders above the diamond, start centred near the bottom. Authored at
+ * 16:9; call X3Touch_SetAspect for the real surface. */
 void X3Touch_DefaultLayout(X3TouchLayout *layout);
+
+/* Rebuild the layout for a surface whose width / height is `aspect`.
+ * Invalid aspects fall back to 16:9. The mirrored flag and opacity survive. */
+void X3Touch_SetAspect(X3TouchLayout *layout, float aspect);
 
 /* Mirror the layout horizontally in place. Idempotent per call: toggling
  * twice returns to the authored layout. */

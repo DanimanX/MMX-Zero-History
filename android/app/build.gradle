@@ -2,6 +2,17 @@ plugins {
     id 'com.android.application'
 }
 
+// Firma: el keystore nunca se versiona. Se pasa por entorno (CI) o por
+// -PmmxKeystore=... en la línea de comandos. Sin esas variables el APK de
+// release queda sin firmar y no se puede instalar; tools/build_android.sh
+// genera uno efímero cuando no encuentra ninguno.
+def mmxKeystore = System.getenv('MMX_KEYSTORE') ?: project.findProperty('mmxKeystore')
+def mmxKeyAlias = System.getenv('MMX_KEY_ALIAS') ?: project.findProperty('mmxKeyAlias') ?: 'mmx'
+def mmxStorePass = System.getenv('MMX_KEYSTORE_PASSWORD') ?: project.findProperty('mmxKeystorePassword')
+def mmxKeyPass = System.getenv('MMX_KEY_PASSWORD') ?: project.findProperty('mmxKeyPassword')
+def hasSigning = mmxKeystore && mmxStorePass && mmxKeyPass
+def mmxAbi = project.findProperty('mmxAbi') ?: 'arm64-v8a'
+
 android {
     namespace 'cl.zerohistory.mmx'
     compileSdk 34
@@ -11,11 +22,11 @@ android {
         applicationId 'cl.zerohistory.mmx'
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName '0.0.1'
+        versionCode 2
+        versionName '0.0.2'
         ndk {
             // El host compilado por CMake se empaqueta por ABI.
-            abiFilters 'arm64-v8a'
+            abiFilters mmxAbi
         }
         externalNativeBuild {
             cmake {
@@ -41,10 +52,29 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            if (hasSigning) {
+                storeFile file(mmxKeystore)
+                storePassword mmxStorePass
+                keyAlias mmxKeyAlias
+                keyPassword mmxKeyPass
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
-            // Firma: usar el keystore del entorno de CI, nunca del repo.
+            shrinkResources false
+            if (hasSigning) {
+                signingConfig signingConfigs.release
+            }
+            // El APK es un host LLE sin código derivado del ROM. No se ofusca
+            // ni se recorta: el binario nativo ya viene compilado.
+        }
+        debug {
+            applicationIdSuffix '.debug'
         }
     }
 
@@ -55,6 +85,6 @@ android {
 }
 
 dependencies {
-    // SDL2 para Android se vendoriza como módulo local; ver docs/ANDROID.md.
-    // implementation project(':sdl2')
+    // SDL3 para Android se vendoriza como librería nativa + clases Java;
+    // ver tools/build_android.sh y docs/ANDROID.md.
 }

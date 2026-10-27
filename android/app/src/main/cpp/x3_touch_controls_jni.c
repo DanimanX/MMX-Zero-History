@@ -78,6 +78,15 @@ Java_cl_zerohistory_mmx_TouchBridge_nativeReleaseAll(JNIEnv *env, jclass cls) {
   x3_touch_release_all();
 }
 
+JNIEXPORT void JNICALL
+Java_cl_zerohistory_mmx_TouchBridge_nativeSetAspect(JNIEnv *env, jclass cls,
+                                                     jfloat aspect) {
+  (void)env;
+  (void)cls;
+  ensure_ready();
+  X3Touch_SetAspect(&g_layout, aspect);
+}
+
 JNIEXPORT jint JNICALL
 Java_cl_zerohistory_mmx_TouchBridge_nativeMask(JNIEnv *env, jclass cls) {
   (void)env;

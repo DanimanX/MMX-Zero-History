@@ -11,12 +11,28 @@ endif()
 set(SNESRECOMP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/snesrecomp" CACHE PATH "snesrecomp checkout")
 set(RECOMP_UI_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/recomp-ui" CACHE PATH "recomp-ui checkout")
 set(SNESRECOMP_ENABLE_MODS ON CACHE BOOL "Shared mod package runtime" FORCE)
+
+# A ROM-free host with no AOT bodies: the dispatch tables stay empty and the
+# LLE interpreter runs every guest instruction. This is how the port booted at
+# bring-up (src/gen_stubs.c), and it is the only build an APK can legally
+# ship without ROM-derived code. The player supplies their own dump at run
+# time. Desktop releases keep using the generated AOT code.
+option(MMX_LLE_ONLY "Build a ROM-free host: empty AOT dispatch, LLE interpreter only" OFF)
 include(${SNESRECOMP_ROOT}/runner/runner.cmake)
 
-add_executable(MegaManX3SNESRecomp
-    ${SNESRECOMP_RUNNER_SOURCES}
+set(MMX_SOURCES
     src/main.c src/gen_stubs.c src/x3_display.c src/x3_cpu_infra.c
     src/x3_rtl.c src/x3_spc_player.c src/mods/x3_widescreen_plugin.c)
+
+if(ANDROID)
+    # SDLActivity loads a shared object and resolves `main` inside it, so the
+    # Android target is a library, not an executable.
+    add_library(MegaManX3SNESRecomp SHARED ${SNESRECOMP_RUNNER_SOURCES} ${MMX_SOURCES})
+    set_target_properties(MegaManX3SNESRecomp PROPERTIES
+        OUTPUT_NAME "MegaManX3SNESRecomp" PREFIX "lib")
+else()
+    add_executable(MegaManX3SNESRecomp ${SNESRECOMP_RUNNER_SOURCES} ${MMX_SOURCES})
+endif()
 target_include_directories(MegaManX3SNESRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/recomp ${SNESRECOMP_RUNNER_INCLUDE_DIRS})
@@ -33,12 +49,23 @@ target_link_libraries(MegaManX3SNESRecomp PRIVATE ${SNESRECOMP_RUNNER_LIBRARIES}
 snesrecomp_target_sdl(MegaManX3SNESRecomp)
 snesrecomp_target_fiber_compat(MegaManX3SNESRecomp)
 snesrecomp_target_desktop_host(MegaManX3SNESRecomp TIER2)
-snesrecomp_target_generated_code(MegaManX3SNESRecomp ${CMAKE_CURRENT_SOURCE_DIR}/src/gen)
+if(MMX_LLE_ONLY)
+    # Empty tables, normal boot path: SnesInit loads the player's ROM and the
+    # interpreter tier executes it. No generated C, no ROM-derived binary.
+    set(SNESRECOMP_GEN_SUBDIR "interpreter_only")
+else()
+    set(SNESRECOMP_GEN_SUBDIR "gen")
+endif()
+
+snesrecomp_target_generated_code(MegaManX3SNESRecomp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/${SNESRECOMP_GEN_SUBDIR})
 snesrecomp_target_mod_catalog(MegaManX3SNESRecomp ${CMAKE_CURRENT_SOURCE_DIR}/mods/preloaded)
 
-include(${RECOMP_UI_ROOT}/recomp_ui.cmake)
-recomp_target_launcher_ui(MegaManX3SNESRecomp CONSOLE snes
-    BOXART ${CMAKE_CURRENT_SOURCE_DIR}/recomp/launcher/boxart.tga)
+if(NOT ANDROID)
+    include(${RECOMP_UI_ROOT}/recomp_ui.cmake)
+    recomp_target_launcher_ui(MegaManX3SNESRecomp CONSOLE snes
+        BOXART ${CMAKE_CURRENT_SOURCE_DIR}/recomp/launcher/boxart.tga)
 
-include(${SNESRECOMP_ROOT}/runner/cmake/mmx_state_tests.cmake)
-snesrecomp_target_mmx_state_tests(MegaManX3SNESRecomp ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c)
+    include(${SNESRECOMP_ROOT}/runner/cmake/mmx_state_tests.cmake)
+    snesrecomp_target_mmx_state_tests(MegaManX3SNESRecomp ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c)
+endif()

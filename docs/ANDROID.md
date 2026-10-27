@@ -1,91 +1,116 @@
-# Android — controles táctiles y mando externo
+# Android — APK, 16:9 y controles
 
-## Lo que hay hoy en el motor
+## Qué es el APK
 
-El host de escritorio de `snesrecomp` **ya trae soporte de mando** por
-`SDL_GameController`: Xbox, DualShock/DualSense y 8BitDo funcionan sin
-configuración, con zona muerta y gestos de rewind/launcher configurables
-(`snesrecomp/runner/src/desktop/config.h`, `[Controller]`).
+`MMXZeroHistory-android-arm64-v8a.apk` es un **host LLE sin código derivado
+del ROM**. El binario enlaza `src/interpreter_only/dispatch_stub.c` (tablas AOT
+vacías) y `src/gen_stubs.c` lo documenta desde el bring-up: sin cobertura AOT,
+el intérprete ejecuta los bytes reales del cartucho. El ROM nunca viaja en el
+APK; lo aporta el jugador.
 
-El runner también tiene rutas `__ANDROID__` (directorio de trabajo en el
-almacenamiento externo de la app, backend de render SDL en vez de OpenGL de
-escritorio). Lo que **no** trae es una capa táctil.
+Eso es distinto del *setup host* de escritorio (`SNESRECOMP_SETUP_HOST=ON`),
+que se niega a bootear y solo abre el asistente de regeneración. El APK sí
+arranca el juego, a costa de velocidad: todo corre en el intérprete, sin los
+cuerpos AOT que aceleran la build de escritorio.
 
-## Diseño de los controles táctiles
+## Instalar
 
-- **D-pad** en la esquina inferior izquierda, cuatro botones discretos (no un
-  stick virtual: X3 se juega con D-pad y un stick analógico mapeado a
-  direcciones digitales se siente mal en plataformas).
-- **Cuatro botones SNES** en rombo abajo a la derecha: Y arriba, B derecha,
-  A abajo, X izquierda, igual que el layout de SNES.
-- **L y R** como hombros arriba de los botones.
-- **start** centrado arriba de la zona de juego, chico, para no tocarlo por
-  accidente.
-- **Zona muerta y opacidad** configurables; **espejado** izquierda/derecha
-  para jugadores zurdos.
-- **Auto-ocultar**: cuando se conecta un mando externo, la capa táctil se
-  oculta sola (el mando externo es estrictamente mejor). Se puede forzar el
-  contrario desde ajustes.
-- **Multi-touch real**: agarrar dirección y saltar al mismo tiempo es el caso
-  normal, no la excepción. Cada dedo se sigue por `SDL_FingerID` y se mapea al
-  botón que estaba bajo ese dedo en el momento del toque.
+1. Instalá el APK (Android 7.0+, arm64-v8a).
+2. Copiá tu `mmx3.sfc` a:
+
+   ```console
+   adb push mmx3.sfc /sdcard/Android/data/cl.zerohistory.mmx/files/mmx3.sfc
+   ```
+
+   El host hace `chdir` a ese directorio al arrancar y busca `mmx3.sfc` ahí
+   (`FindRomBesideExe`, `MMX_ROM_FILE`).
+
+3. Abrí la app. `AssetInstaller` copia el catálogo de mods desde `assets/mods`
+   al mismo directorio, así que el paquete Widescreen existe cuando el motor
+   resuelve la selección por defecto.
+
+## 16:9
+
+- La actividad entra en modo inmersivo pegajoso (`WindowInsetsController` en
+  API 30+, flags clásicos abajo) y dibuja bajo el recorte de pantalla
+  (`layoutInDisplayCutoutMode = shortEdges`, API 28+).
+- `sensorLandscape` + `resizeableActivity` aceptan 16:9, 19.5:9 y 20:9. El
+  motor calcula el ancho de campo desde el drawable y lo limita a 342 px, así
+  que en pantallas más altas la imagen se centra con barras laterales en vez
+  de estirarse.
+- La capa táctil mide sus teclas en unidades del lado corto
+  (`X3Touch_SetAspect` en C, `TouchOverlay.rectFor` en Java): las teclas siguen
+  cuadradas en cualquier aspecto. Los insets seguros del notch y de la barra
+  de gestos se aplican antes de dibujar y de hacer hit-test.
+- El paquete `megaman-x3.enhancement.widescreen` viene con
+  `default_enabled = true` desde la 0.0.2.
+
+## Controles
+
+- **Mando externo**: funciona hoy. SDL lo detecta y `MainActivity` oculta la
+  capa táctil cuando hay un `SOURCE_GAMEPAD` o `SOURCE_JOYSTICK` conectado.
+- **Capa táctil**: se dibuja, calcula la máscara de 12 bits y multi-touch
+  (latcheo al deslizar, dos dedos en el mismo botón, tabla de dedos), pero
+  **todavía no llega al guest**. El estado del pad es `static` en
+  `snesrecomp/runner/src/desktop/host_main.c` y no hay API de inyección. El
+  puente JNI expone `x3_touch_current_mask()`; falta que el host la consuma.
+  Mientras tanto, para jugar en el teléfono hace falta un mando Bluetooth.
 
 ## Estructura
 
 ```
 android/
   settings.gradle            proyectos incluidos
-  build.gradle               configuración raíz
-  gradle.properties
+  build.gradle               configuración raíz (AGP 8.5.2)
   app/
-    build.gradle             empaqueta el binario nativo + assets
+    build.gradle             empaqueta el .so, assets, firma
     src/main/AndroidManifest.xml
     src/main/java/cl/zerohistory/mmx/MainActivity.java
-    src/main/java/cl/zerohistory/mmx/TouchOverlay.java   (implementación)
-    src/main/cpp/x3_touch_controls.c                     (contrato de entrada)
-    src/main/assets/         ROM del usuario, no incluida
+    src/main/java/cl/zerohistory/mmx/TouchOverlay.java
+    src/main/java/cl/zerohistory/mmx/AssetInstaller.java
+    src/main/cpp/               capa táctil + JNI (libx3touch.so)
+    src/main/assets/            catálogo de mods (generado); el ROM no se commitea
+    src/main/res/               splash 16:9, icono adaptativo
 ```
 
 ## Cómo se construye
 
-Requisitos: Android SDK con NDK r27, CMake 3.20+, y el mismo árbol de
-submódulos que el build de escritorio.
+Requisitos: Android SDK 34, NDK r27 (`27.0.12077973`), CMake 3.22, Ninja,
+JDK 17 y Gradle 8.7+.
 
 ```bash
-export ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/27.0.12077973
-cmake -S . -B build-android -G Ninja \
-  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
-  -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 \
-  -DSNESRECOMP_SDL_BACKEND=SDL2
-cmake --build build-android --target MegaManX3SNESRecomp
-cd android && ./gradlew assembleDebug
+export ANDROID_SDK_ROOT=$HOME/Android/Sdk
+export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973
+export JAVA_HOME=/ruta/a/jdk-17
+bash tools/build_android.sh arm64-v8a
 ```
 
-El `.so` que produce CMake se copia a `android/app/src/main/jniLibs/arm64-v8a/`.
+El script:
 
-## Estado real de esta versión
+1. configura CMake con el toolchain del NDK, `MMX_LLE_ONLY=ON` y SDL3;
+2. compila `libMegaManX3SNESRecomp.so` (el juego, con SDL3 estático dentro);
+3. copia el `.so` a `android/app/src/main/jniLibs/<abi>/`;
+4. copia las clases Java de SDL desde el árbol de SDL3;
+5. copia `mods/preloaded/packages` a `assets/mods`;
+6. firma y corre `gradle assembleRelease`.
 
-**El camino Android está especificado y andamiado, no verificado.** En la
-máquina donde se preparó esta versión 0.0.1 no hay Android SDK ni NDK, así que:
+Salida: `dist/MMXZeroHistory-android-<abi>.apk`.
 
-- `android/` existe con la estructura de proyecto y el manifiesto;
-- `src/main/cpp/x3_touch_controls.c` define el contrato de entrada (qué botón,
-  qué dedo, qué zona) y la geometría por defecto, compilable en el host de
-  escritorio para pruebas;
-- la actividad Java y la capa táctil están escritas, pero **nunca se
-  ejecutaron en un dispositivo**;
-- el job de CI de Android es **manual** (`workflow_dispatch`) y está marcado
-  como experimental: no bloquea la construcción de escritorio.
+La firma se toma de `MMX_KEYSTORE` + `MMX_KEYSTORE_PASSWORD` +
+`MMX_KEY_PASSWORD`; si no existen, el script genera una clave efímera fuera
+del repositorio. Para publicar actualizaciones encima de una instalación
+previa hay que reusar la misma clave.
 
-La capa táctil necesita además un punto de inyección de entrada en el host de
-`snesrecomp`, que hoy no existe como API pública (el estado del pad es
-`static` en `host_main.c`). Ese es el primer trabajo pendiente, y está
-documentado en [`ESTADO.md`](ESTADO.md) con el archivo y la función exactos.
+## Estado real
 
-## Mando externo
-
-Como el motor ya soporta gamepads por SDL, la versión de escritorio
-(Linux/Windows/macOS) tiene soporte real hoy. En Android el mando externo entra
-por el mismo `SDL_GameController`, siempre que la actividad reenvíe los
-eventos de `KeyEvent`/`MotionEvent` a SDL, que es exactamente lo que hace
-`MainActivity.java` en este andamiaje.
+- El APK **se compila, se firma y se verifica su empaquetado** en esta máquina
+  (SDK 34 / NDK r27): `aapt dump badging` reporta `versionCode 2`,
+  `versionName 0.0.2`, `native-code: arm64-v8a`; `apksigner` valida la firma; y
+  el APK contiene `libMegaManX3SNESRecomp.so`, `assets/mods/...` y la placa de
+  arranque.
+- **No se ejecutó en un dispositivo**: no hay teléfono ni emulador en el
+  entorno de desarrollo. La primera corrida real queda pendiente y es lo que
+  hay que mirar antes de prometer jugabilidad.
+- El envío de toques al guest sigue pendiente (ver arriba).
+- El job `Android` de CI corre el mismo `tools/build_android.sh`; `Release`
+  lo usa para adjuntar el APK a la etiqueta.
