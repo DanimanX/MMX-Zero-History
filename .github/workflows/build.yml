@@ -30,6 +30,8 @@ jobs:
         run: python3 tools/test_capsule_shuffle.py
       - name: Controles táctiles — geometría y multi-touch
         run: bash tools/test_touch_controls.sh
+      - name: Campo 16:9 — ancho de frame y presentación
+        run: bash tools/test_display_width.sh
       - name: Barajado de ejemplo (speedrun, semilla 0)
         run: python3 tools/capsule_shuffle.py --mode speedrun
 

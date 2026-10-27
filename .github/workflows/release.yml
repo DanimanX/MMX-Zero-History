@@ -109,8 +109,12 @@ jobs:
           if-no-files-found: error
 
   android:
-    name: Android arm64-v8a
+    name: Android ${{ matrix.abi }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, x86_64]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -163,12 +167,12 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/toolchains"
           MMX_TOOLCHAIN_DIR="$RUNNER_TEMP/toolchains" \
-            bash tools/build_android.sh arm64-v8a
+            bash tools/build_android.sh "${{ matrix.abi }}"
 
       - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
-          name: MMXZeroHistory-android-arm64-v8a
+          name: MMXZeroHistory-android-${{ matrix.abi }}
           path: dist/*.apk
           if-no-files-found: error
 
@@ -187,7 +191,7 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: MMX Zero History ${{ github.event.inputs.tag || github.ref_name }}
-          body_path: RELEASE_NOTES_v0.0.2.md
+          body_path: RELEASE_NOTES_v0.0.3.md
           files: |
             artifacts/*.zip
             artifacts/*.apk

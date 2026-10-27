@@ -1,4 +1,4 @@
-# Estado real de la versión 0.0.2
+# Estado real de la versión 0.0.3
 
 Este documento existe porque es fácil confundir "está documentado" con "está
 implementado". Acá está la línea entre las dos cosas, sin adornos.
@@ -35,12 +35,18 @@ implementado". Acá está la línea entre las dos cosas, sin adornos.
   catálogo viaja en los zips de escritorio y en los assets del APK. La
   geometría táctil se mide en unidades del lado corto y pasa sus pruebas en
   16:9, 19.5:9, 20:9 y 4:3.
-- **APK Android compilado y firmado.** `tools/build_android.sh arm64-v8a`
-  compiló `libMegaManX3SNESRecomp.so` (host LLE sin código del ROM) con SDK 34
-  y NDK r27, y `gradle assembleRelease` produjo un APK de 5,5 MB, `versionCode
-  2`, `versionName 0.0.2`, firmado y verificado con `aapt` y `apksigner`. El
-  APK contiene el `.so`, `assets/mods/...` y la placa 16:9. **No se ejecutó en
-  un dispositivo**: el entorno no tiene teléfono ni emulador.
+- **APK Android compilado, firmado y ejecutado en un emulador.** Se instalaron
+  el emulador y una imagen `google_apis;x86_64` de Android 14 con KVM.
+  `tools/build_android.sh` produjo los APK `arm64-v8a` y `x86_64`
+  (`versionCode 3`, `versionName 0.0.3`, firmados, con `aapt` y `apksigner`
+  verificados). En el emulador: la app abre y **queda abierta** en la pantalla
+  de entrada; el selector del sistema importa un `mmx3.sfc`; un archivo con
+  SHA-256 distinto se rechaza sin dejar restos; con un dump presente el motor
+  llega a `SDL init ok`, `renderer initialized: sdl` y `first frame
+  simulated`. El campo con `Widescreen = 1` mide 342 px.
+- **Campo 16:9 acotado a 342.** `tools/test_display_width.sh` cubre ventanas
+  16:9, 16:10 y ultrawide: 342 px cuando la ventana da para el campo ancho,
+  256 en 4:3.
 - **CI de escritorio en tres plataformas.** El workflow `Release` compiló el
   setup host en Linux, Windows y macOS en runners reales, y los tres `.zip`
   quedaron adjuntos a la release `v0.0.1`. El gate `Desktop host` corrió verde
@@ -48,10 +54,14 @@ implementado". Acá está la línea entre las dos cosas, sin adornos.
 
 ## Lo que está escrito pero NO ejecutado
 
-- **La app Android en un dispositivo.** El APK compila, se firma y se
-  empaqueta, pero nunca se instaló ni se abrió en un teléfono. El primer
-  arranque real —y el rendimiento del intérprete en ARM— es la verificación que
-  falta.
+- **Una partida Android real.** El emulador arranca la app y el motor, pero
+  este repositorio no incluye el ROM: con un archivo aleatorio el guest termina
+  en un bucle de `BRK`. Falta un teléfono con el dump del dueño y medir el
+  intérprete en ARM.
+- **El catálogo de mods en Android.** El host lo resuelve relativo a
+  `/system/bin`; con `--config` el proceso muere en
+  `snes_mod_runtime_commit_c` (reproducido en el emulador). El 16:9 viaja por
+  `config.ini`. Es un bug del host, río arriba.
 - **El envío de toques al guest.** La capa táctil dibuja y calcula la máscara
   de 12 bits, pero el estado del pad es privado de `host_main.c`; no hay API
   de inyección. Con mando Bluetooth sí se juega.

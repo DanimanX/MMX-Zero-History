@@ -12,4 +12,14 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
+
+    <!-- Pantalla de entrada (ROM). No es a pantalla completa: es la unica
+         pantalla de la app con botones del sistema y se navega como
+         cualquier lista. -->
+    <style name="SetupTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/setup_background</item>
+        <item name="android:statusBarColor">@color/setup_background</item>
+        <item name="android:navigationBarColor">@color/setup_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

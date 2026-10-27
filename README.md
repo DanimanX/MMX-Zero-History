@@ -101,6 +101,10 @@ Los assets, la placa de arranque y el icono se rediseñaron en 16:9
 sigue siendo 16:9 centrada, no estirada, y los controles táctiles se miden en
 unidades del lado corto para seguir cuadrados en cualquier relación de aspecto.
 
+El campo se topa en 342 px (`tools/test_display_width.sh`): es la
+configuración que el port midió, así que una pantalla más ancha que 16:9
+agrega barras en vez de inventar columnas sin validar.
+
 ## Cápsulas errantes
 
 Ninguna cápsula tiene posición fija. Cada etapa tiene **tres nichos**
@@ -158,21 +162,34 @@ al motor en [`docs/MUSICA.md`](docs/MUSICA.md).
 
 ### APK de Android
 
-Cada release publica `MMXZeroHistory-android-arm64-v8a.apk`. Es un host LLE
-sin código derivado del ROM: el binario no trae el juego, lo carga desde tu
-dump. Para jugar:
+Cada release publica `MMXZeroHistory-android-arm64-v8a.apk` (y un build
+`x86_64` para emuladores). Es un host LLE sin código derivado del ROM: el
+binario no trae el juego, lo carga desde tu dump.
 
-1. Instalá el APK (Android 7.0+, arm64).
-2. Copiá tu `mmx3.sfc` a `Android/data/cl.zerohistory.mmx/files/`.
-3. Abrí la app. El catálogo de mods se extrae solo en el primer arranque y el
-   16:9 queda activo.
+1. Instalá el APK (Android 7.0+).
+2. Abrí la app. La primera pantalla pide el cartucho.
+3. Tocá **Elegir mi mmx3.sfc** y elegí tu dump con el selector del sistema. Se
+   copia a la carpeta de la app, se verifica el SHA-256 y se descarta la
+   cabecera de copiador si la trae.
+4. La app arranca el motor con el campo 16:9.
 
-El APK se compila, se firma y se verifica su empaquetado (`aapt`, `apksigner`,
-contenido), pero **no se ejecutó en un dispositivo en este repositorio**. La
-capa táctil se dibuja con geometría 16:9 y produce la máscara de botones, pero
-el envío al guest sigue pendiente porque el estado del pad es privado del host:
-para jugar hoy hace falta un mando Bluetooth. La receta completa, con las
-dependencias y el modo sin ROM, está en [`docs/ANDROID.md`](docs/ANDROID.md).
+![Pantalla de entrada en Android](docs/img/android-rom-setup.png)
+
+Desde la 0.0.3 la app **no se cierra al abrir**: si falta el ROM (o no es el
+dump correcto) lo dice en pantalla, y si el motor se corta después de arrancar
+muestra el final de `native.log` en vez de desaparecer.
+
+El APK se compila, se firma y se ejecuta en un emulador x86_64 del repo
+(SDK 34, Android 14): la pantalla de entrada queda estable, el importador
+rechaza un archivo con SHA-256 equivocado y el motor llega a
+`first frame simulated` con un dump presente. Lo que **no** se pudo verificar
+es una partida real: hace falta un dump legal de Mega Man X3 (USA), que este
+repositorio no incluye.
+
+La capa táctil se dibuja con geometría 16:9 y produce la máscara de botones,
+pero el envío al guest sigue pendiente porque el estado del pad es privado del
+host: para jugar hoy hace falta un mando Bluetooth. La receta completa está en
+[`docs/ANDROID.md`](docs/ANDROID.md).
 
 La **lógica táctil** sí está probada en el escritorio (17 pruebas: dos dedos a
 la vez, dos dedos en el mismo botón, latcheo al deslizar, saturación de la
@@ -181,6 +198,7 @@ tabla de dedos, espejado exacto y teclas cuadradas en 16:9, 19.5:9, 20:9 y
 
 ```console
 bash tools/test_touch_controls.sh
+bash tools/test_display_width.sh
 ```
 
 El APK se construye con:

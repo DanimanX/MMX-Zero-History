@@ -42,4 +42,68 @@
 #define MmxConfigureWsBgMargins X3ConfigureWsBgMargins
 #define kMmxGameInfo kX3GameInfo
 
+#ifdef __ANDROID__
+/* The native host's only output channel is stderr, and Android gives a
+ * process no stderr. Without this the app dies silently -- which is exactly
+ * how v0.0.2 shipped: no ROM, `main` returned 1, and the activity finished
+ * with nothing in logcat.
+ *
+ * RomSetupActivity checks the ROM before starting the game, so this log is
+ * the second line of defence: if the run stops after that check, the last
+ * lines here name the reason and the setup screen shows them.
+ *
+ * The log lands in the app's working directory, which is where the setup
+ * screen and `adb pull` both look for it. */
+#define MMX_ANDROID_LOG_NAME "native.log"
+#define MMX_ANDROID_CWD_FILE "/data/data/cl.zerohistory.mmx/files/cwd.txt"
+#define MMX_DESKTOP_ENTRY mmx_desktop_entry
+#endif
+
 #include "desktop/mmx23_host_main.inc"
+
+#ifdef __ANDROID__
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+/* The host resolves `config.ini`, `keybinds.ini`, `saves/`, the log and the
+ * ROM relative to the process working directory. An app process starts in
+ * `/`, which is not writable: before this, config and saves had to be
+ * re-anchored by the host and the mod catalog resolved against
+ * `/system/bin` (a read-only filesystem).
+ *
+ * Java cannot chdir, so AssetInstaller writes the app's external files path
+ * into a fixed private file and this reads it before the host starts. If the
+ * file is missing the host still runs, with whatever cwd it inherited. */
+static void mmx_android_enter_workdir(void) {
+  FILE *f = fopen(MMX_ANDROID_CWD_FILE, "r");
+  if (!f) return;
+  char dir[1024];
+  if (fgets(dir, sizeof(dir), f)) {
+    size_t n = strlen(dir);
+    while (n && (dir[n - 1] == '\n' || dir[n - 1] == '\r')) dir[--n] = '\0';
+    if (n && chdir(dir) == 0) setenv("MMX_WORKDIR", dir, 1);
+  }
+  fclose(f);
+}
+
+int main(int argc, char **argv) {
+  mmx_android_enter_workdir();
+
+  /* One truncating run per launch, unbuffered: a crash or an exit() must not
+   * lose the line that explains why the process is going away. The previous
+   * run is kept so a re-launch does not erase the evidence. */
+  rename(MMX_ANDROID_LOG_NAME, "native.prev.log");
+  FILE *log = fopen(MMX_ANDROID_LOG_NAME, "w");
+  if (log) {
+    setvbuf(log, NULL, _IONBF, 0);
+    dup2(fileno(log), STDERR_FILENO);
+    dup2(fileno(log), STDOUT_FILENO);
+  }
+  fprintf(stderr, "[mmx] main entry (cwd=%s)\n", getenv("MMX_WORKDIR") ? getenv("MMX_WORKDIR") : "?");
+  int rc = mmx_desktop_entry(argc, argv);
+  fprintf(stderr, "[mmx] main exit rc=%d\n", rc);
+  return rc;
+}
+#endif

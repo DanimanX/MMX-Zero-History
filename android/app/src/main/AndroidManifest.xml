@@ -28,17 +28,29 @@
              motor decide el ancho de campo. configChanges evita recrear la
              actividad (y perder el estado del juego) al girar o al
              mostrar/ocultar las barras del sistema. -->
+
+        <!-- Pantalla de entrada: consigue y verifica el ROM, y arranca el
+             motor. Es el launcher porque sin ROM el juego no puede hacer
+             nada (ver RomSetupActivity). -->
         <activity
-            android:name=".MainActivity"
+            android:name=".RomSetupActivity"
             android:exported="true"
-            android:screenOrientation="sensorLandscape"
-            android:resizeableActivity="true"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|navigation"
-            android:launchMode="singleTask">
+            android:theme="@style/SetupTheme"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape"
+            android:resizeableActivity="true"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|navigation"
+            android:launchMode="singleTask">
         </activity>
     </application>
 </manifest>

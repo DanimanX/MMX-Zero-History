@@ -59,6 +59,9 @@ if [ -z "$GAME_LIB" ]; then
 fi
 
 JNI_DIR="$ROOT/android/app/src/main/jniLibs/$ABI"
+# Un APK lleva una sola ABI: restos de una corrida anterior (otra ABI) no
+# deben colarse en el paquete.
+rm -rf "$ROOT/android/app/src/main/jniLibs"
 mkdir -p "$JNI_DIR"
 cp -f "$GAME_LIB" "$JNI_DIR/libMegaManX3SNESRecomp.so"
 echo "   staged $(basename "$GAME_LIB")"

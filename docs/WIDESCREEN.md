@@ -25,9 +25,17 @@ letterboxing, never stretched pixels. The touch overlay measures its keys in
 short-edge units (`X3Touch_SetAspect`, `TouchOverlay.rectFor`), so a key is
 square at 16:9, 19.5:9, 20:9 and 4:3 instead of stretching with the window.
 
-The Android package carries the same catalog as the desktop zip and extracts
-it to the app's external files directory on first launch; without that step
-the mod runtime would not find the package and the build would stay 4:3.
+The field width is clamped to 342 px (`MMX_MAX_FRAME_WIDTH` in
+`src/x3_display.c`, covered by `tools/test_display_width.sh`). That is the
+configuration this port measured: a 19.5:9 phone or an ultrawide monitor would
+otherwise ask for 416+ columns that no BG, HUD or object-window patch here was
+validated against. Wider screens get bars instead, and the 4:3 window still
+gets the authentic 256-pixel field.
+
+On Android the 16:9 setting travels in `config.ini` (`[Graphics] Widescreen`),
+copied from `assets/config.default.ini` on first launch. The mod catalog is
+also extracted, but the host resolves `mods/preloaded` against its executable
+directory, which is `/system/bin` on Android -- see docs/ANDROID.md.
 
 ## Mega Man X2 correspondence
 

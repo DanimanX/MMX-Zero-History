@@ -10,40 +10,63 @@ APK; lo aporta el jugador.
 
 Eso es distinto del *setup host* de escritorio (`SNESRECOMP_SETUP_HOST=ON`),
 que se niega a bootear y solo abre el asistente de regeneración. El APK sí
-arranca el juego, a costa de velocidad: todo corre en el intérprete, sin los
-cuerpos AOT que aceleran la build de escritorio.
+arranca el juego, a costa de velocidad: todo corre en el intérprete.
 
-## Instalar
+## Flujo de arranque (v0.0.3)
 
-1. Instalá el APK (Android 7.0+, arm64-v8a).
-2. Copiá tu `mmx3.sfc` a:
+```
+RomSetupActivity (launcher)
+  ├─ falta el ROM        → pantalla con instrucciones + selector SAF
+  ├─ SHA-256 no coincide → lo dice, no arranca nada
+  └─ ROM verificado      → MainActivity (SDL + motor)
+                              └─ al volver, muestra native.log si se cortó
+```
 
-   ```console
-   adb push mmx3.sfc /sdcard/Android/data/cl.zerohistory.mmx/files/mmx3.sfc
-   ```
-
-   El host hace `chdir` a ese directorio al arrancar y busca `mmx3.sfc` ahí
-   (`FindRomBesideExe`, `MMX_ROM_FILE`).
-
-3. Abrí la app. `AssetInstaller` copia el catálogo de mods desde `assets/mods`
-   al mismo directorio, así que el paquete Widescreen existe cuando el motor
-   resuelve la selección por defecto.
+- **`RomSetupActivity`** es el launcher de la app. Antes la actividad del motor
+  era la principal, así que abrir la app sin `mmx3.sfc` hacía que `main`
+  devolviera 1 y todo se cerrara en silencio: ese es el "se abre y se cierra"
+  de la 0.0.2.
+- **`RomStore`** importa el dump con `ACTION_OPEN_DOCUMENT`, calcula el SHA-256
+  y solo mueve el archivo a su lugar definitivo si coincide con
+  `65b03268…f1d7`. Una cabecera de copiador de 512 bytes se descarta.
+- **`AssetInstaller`** deja listo el directorio de trabajo antes de que exista
+  el hilo nativo: escribe `cwd.txt` (el host lo lee y hace `chdir`),
+  `config.ini` (con `Widescreen = 1`) y el catálogo de mods.
 
 ## 16:9
 
-- La actividad entra en modo inmersivo pegajoso (`WindowInsetsController` en
-  API 30+, flags clásicos abajo) y dibuja bajo el recorte de pantalla
-  (`layoutInDisplayCutoutMode = shortEdges`, API 28+).
-- `sensorLandscape` + `resizeableActivity` aceptan 16:9, 19.5:9 y 20:9. El
-  motor calcula el ancho de campo desde el drawable y lo limita a 342 px, así
-  que en pantallas más altas la imagen se centra con barras laterales en vez
-  de estirarse.
-- La capa táctil mide sus teclas en unidades del lado corto
-  (`X3Touch_SetAspect` en C, `TouchOverlay.rectFor` en Java): las teclas siguen
-  cuadradas en cualquier aspecto. Los insets seguros del notch y de la barra
-  de gestos se aplican antes de dibujar y de hacer hit-test.
-- El paquete `megaman-x3.enhancement.widescreen` viene con
-  `default_enabled = true` desde la 0.0.2.
+- La actividad del motor entra en modo inmersivo pegajoso
+  (`WindowInsetsController` en API 30+, flags clásicos abajo) y dibuja bajo el
+  recorte de pantalla (`layoutInDisplayCutoutMode = shortEdges`, API 28+).
+- El campo se calcula desde el tamaño real del drawable y **se topa en 342 px**
+  (`src/x3_display.c`, `MMX_MAX_FRAME_WIDTH`). Es la configuración que este
+  port midió: 342×224 con relación de píxel 7:6. En un teléfono 19.5:9 el
+  resultado es 16:9 centrado con barras, no un campo de 416 px que nadie
+  validó. `tools/test_display_width.sh` fija ese contrato.
+- Los controles táctiles se miden en unidades del lado corto
+  (`X3Touch_SetAspect` en C, `TouchOverlay.rectFor` en Java), así que las teclas
+  siguen cuadradas en cualquier aspecto. Los insets del notch y de la barra de
+  gestos se aplican antes de dibujar y de hacer hit-test.
+
+## Configuración y diagnóstico
+
+Todo lo que el host escribe vive en el directorio de trabajo de la app
+(`/storage/emulated/0/Android/data/cl.zerohistory.mmx/files`):
+
+| archivo | qué es |
+|---|---|
+| `mmx3.sfc` | el dump del jugador (2 MiB sin cabecera) |
+| `config.ini` | se copia de `assets/config.default.ini` si no existe |
+| `keybinds.ini`, `saves/` | generados por el motor |
+| `native.log` | stdout/stderr del proceso nativo (Android no tiene stderr) |
+| `native.prev.log` | la corrida anterior, para no perder la evidencia |
+| `mods/preloaded/…` | catálogo de mods extraído del APK |
+
+Para sacarlos de un teléfono:
+
+```console
+adb pull /sdcard/Android/data/cl.zerohistory.mmx/files/native.log
+```
 
 ## Controles
 
@@ -54,23 +77,21 @@ cuerpos AOT que aceleran la build de escritorio.
   **todavía no llega al guest**. El estado del pad es `static` en
   `snesrecomp/runner/src/desktop/host_main.c` y no hay API de inyección. El
   puente JNI expone `x3_touch_current_mask()`; falta que el host la consuma.
-  Mientras tanto, para jugar en el teléfono hace falta un mando Bluetooth.
 
 ## Estructura
 
 ```
 android/
-  settings.gradle            proyectos incluidos
-  build.gradle               configuración raíz (AGP 8.5.2)
-  app/
-    build.gradle             empaqueta el .so, assets, firma
-    src/main/AndroidManifest.xml
-    src/main/java/cl/zerohistory/mmx/MainActivity.java
-    src/main/java/cl/zerohistory/mmx/TouchOverlay.java
-    src/main/java/cl/zerohistory/mmx/AssetInstaller.java
-    src/main/cpp/               capa táctil + JNI (libx3touch.so)
-    src/main/assets/            catálogo de mods (generado); el ROM no se commitea
-    src/main/res/               splash 16:9, icono adaptativo
+  app/build.gradle             empaqueta el .so, assets, firma, versionCode
+  src/main/AndroidManifest.xml
+  src/main/java/cl/zerohistory/mmx/MainActivity.java      SDL + motor
+  src/main/java/cl/zerohistory/mmx/RomSetupActivity.java  launcher
+  src/main/java/cl/zerohistory/mmx/RomStore.java          import + SHA-256
+  src/main/java/cl/zerohistory/mmx/AssetInstaller.java    cwd, config, mods
+  src/main/java/cl/zerohistory/mmx/TouchOverlay.java
+  src/main/cpp/                capa táctil + JNI (libx3touch.so)
+  src/main/assets/             config.default.ini, catálogo de mods (generado)
+  src/main/res/                splash 16:9, icono adaptativo, temas
 ```
 
 ## Cómo se construye
@@ -82,35 +103,36 @@ JDK 17 y Gradle 8.7+.
 export ANDROID_SDK_ROOT=$HOME/Android/Sdk
 export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973
 export JAVA_HOME=/ruta/a/jdk-17
-bash tools/build_android.sh arm64-v8a
+bash tools/build_android.sh arm64-v8a    # teléfonos
+bash tools/build_android.sh x86_64       # emuladores
 ```
 
-El script:
+El script configura CMake con `MMX_LLE_ONLY=ON` y SDL3, compila
+`libMegaManX3SNESRecomp.so`, lo copia a `jniLibs/`, trae las clases Java de
+SDL, copia el catálogo de mods a `assets/mods`, genera/usa un keystore y corre
+`gradle assembleRelease`. Salida: `dist/MMXZeroHistory-android-<abi>.apk`.
 
-1. configura CMake con el toolchain del NDK, `MMX_LLE_ONLY=ON` y SDL3;
-2. compila `libMegaManX3SNESRecomp.so` (el juego, con SDL3 estático dentro);
-3. copia el `.so` a `android/app/src/main/jniLibs/<abi>/`;
-4. copia las clases Java de SDL desde el árbol de SDL3;
-5. copia `mods/preloaded/packages` a `assets/mods`;
-6. firma y corre `gradle assembleRelease`.
+## Estado real (v0.0.3)
 
-Salida: `dist/MMXZeroHistory-android-<abi>.apk`.
+Verificado en un emulador Android 14 (x86_64, KVM):
 
-La firma se toma de `MMX_KEYSTORE` + `MMX_KEYSTORE_PASSWORD` +
-`MMX_KEY_PASSWORD`; si no existen, el script genera una clave efímera fuera
-del repositorio. Para publicar actualizaciones encima de una instalación
-previa hay que reusar la misma clave.
+- la app abre y **queda abierta** en la pantalla de entrada;
+- el selector de archivos del sistema importa un `mmx3.sfc`, y un archivo con
+  SHA-256 distinto se rechaza sin dejar restos (`mmx3.sfc.incoming` se borra);
+- con un dump presente el motor arranca: `SDL init ok`, `renderer
+  initialized: sdl`, `first frame simulated` y heartbeat a 60 fps;
+- el ancho de campo con `Widescreen = 1` es 342 (16:9), no 256.
 
-## Estado real
+Sin verificar, y por qué:
 
-- El APK **se compila, se firma y se verifica su empaquetado** en esta máquina
-  (SDK 34 / NDK r27): `aapt dump badging` reporta `versionCode 2`,
-  `versionName 0.0.2`, `native-code: arm64-v8a`; `apksigner` valida la firma; y
-  el APK contiene `libMegaManX3SNESRecomp.so`, `assets/mods/...` y la placa de
-  arranque.
-- **No se ejecutó en un dispositivo**: no hay teléfono ni emulador en el
-  entorno de desarrollo. La primera corrida real queda pendiente y es lo que
-  hay que mirar antes de prometer jugabilidad.
-- El envío de toques al guest sigue pendiente (ver arriba).
-- El job `Android` de CI corre el mismo `tools/build_android.sh`; `Release`
-  lo usa para adjuntar el APK a la etiqueta.
+- **Una partida real**: no hay dump en el repositorio. Con un archivo aleatorio
+  el guest termina en un bucle de `BRK` y el proceso muere; eso es el ROM, no
+  la app.
+- **El catálogo de mods en Android**: el host resuelve `mods/preloaded`
+  relativo al ejecutable (`/system/bin`, de solo lectura) cuando no se le pasa
+  `--config`; con `--config` el proceso muere dentro de
+  `snes_mod_runtime_commit_c` (probado en el emulador). Por eso el 16:9 viaja
+  en `config.ini` y el catálogo se extrae pero no se usa. Es un bug del host
+  que hay que arreglar río arriba, no en este repositorio.
+- **Rendimiento**: todo corre en el intérprete LLE. En un teléfono real hay que
+  medirlo; el emulador x86_64 con KVM no es representativo de un ARM.

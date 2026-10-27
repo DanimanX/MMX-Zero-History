@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Mismo fondo que el arte de marca; el icono adaptativo lo usa detrás
+    <!-- Mismo fondo que el arte de marca; el icono adaptativo lo usa detras
          de la capsula y el Omega. -->
     <color name="ic_launcher_background">#080C18</color>
+    <color name="setup_background">#080C18</color>
 </resources>

@@ -43,6 +43,19 @@ public class MainActivity extends SDLActivity {
         return "main";
     }
 
+    /**
+     * Argumentos del host. `--rom` fija la ruta del dump, así el motor no
+     * depende de que el proceso herede el directorio de trabajo correcto.
+     *
+     * No se pasa `--config`: con ese argumento el host busca el catálogo de
+     * mods relativo al cwd, y ese camino aborta el proceso en Android (ver
+     * docs/ANDROID.md). El 16:9 viaja en el config.ini por defecto.
+     */
+    @Override
+    protected String[] getArguments() {
+        return new String[] { "--rom", RomStore.rom(this).getAbsolutePath() };
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Antes de super.onCreate: el hilo nativo arranca desde SDLActivity y

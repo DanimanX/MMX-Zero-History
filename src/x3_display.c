@@ -12,6 +12,14 @@ static int ClampEven(int64_t value) {
   return (int)value;
 }
 
+/* The port is documented and validated at 342x224 for 16:9
+ * (docs/WIDESCREEN.md). A 19.5:9 or 20:9 phone, or an ultrawide monitor,
+ * would otherwise push the adaptive width to 416+. Every game-specific
+ * patch here -- BG gutter reconstruction, HUD anchoring, object windows --
+ * was measured at 342, so present exactly the validated 16:9 field and let
+ * the host letterbox any extra screen. */
+#define MMX_MAX_FRAME_WIDTH 342
+
 int X3Display_ComputeFrameWidth(int drawable_width, int drawable_height,
                                  bool widescreen) {
   if (!widescreen || drawable_width <= 0 || drawable_height <= 0)
@@ -26,6 +34,7 @@ int X3Display_ComputeFrameWidth(int drawable_width, int drawable_height,
       (remainder * 2 == drawable_height && (width & 1) != 0))
     width++;
   if (width & 1) width++;
+  if (width > MMX_MAX_FRAME_WIDTH) width = MMX_MAX_FRAME_WIDTH;
   return ClampEven(width);
 }
 
