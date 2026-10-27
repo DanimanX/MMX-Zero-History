@@ -1,12 +1,17 @@
-/* Mega Man X3 identity/adaptation layer for the shared X2/X3 desktop host. */
+/* MMX Zero History identity/adaptation layer for the shared X2/X3 desktop host.
+ *
+ * The ROM identity below is deliberately UNCHANGED from Mega Man X3 (USA):
+ * Zero History is a recompiled build of that cartridge, so keeping the digest
+ * is what lets the launcher accept the player's own dump. Only the
+ * presentation identity (names, titles, version) is rebranded. */
 #define MMX_RTL_HEADER "x3_rtl.h"
 #define MMX_DISPLAY_HEADER "x3_display.h"
 #define MMX_SPC_HEADER "x3_spc_player.h"
 
-#define MMX_WINDOW_TITLE "Mega Man X3 (Recompiled)"
-#define MMX_GAME_NAME "Mega Man X3"
+#define MMX_WINDOW_TITLE "MMX Zero History (Recompiled)"
+#define MMX_GAME_NAME "MMX Zero History"
 #define MMX_GAME_REGION "(USA)"
-#define MMX_LAUNCHER_TITLE "Mega Man X3 \xE2\x80\x94 Launcher"
+#define MMX_LAUNCHER_TITLE "MMX Zero History \xE2\x80\x94 Launcher"
 #define MMX_ROM_CRC32 0xFA0FE671u
 #define MMX_ROM_SHA256_BYTES \
   0x65,0xb0,0x32,0x68,0xaf,0xac,0x29,0x63, \

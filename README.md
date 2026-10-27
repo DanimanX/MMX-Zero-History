@@ -1,134 +1,215 @@
-# MegaManX3SNESRecomp
+![MMX Zero History](docs/img/banner.png)
 
-Static recompilation of **Mega Man X3 (USA)** built on
-[snesrecomp](https://github.com/mstan/snesrecomp), sharing the
-[recomp-ui](https://github.com/mstan/recomp-ui) pre-boot launcher with the
-other SNES recomp ports.
+# MMX Zero History
 
-You must supply your own legally-obtained ROM. Nothing ROM-derived is
-committed here.
+Recompilación nativa de **Mega Man X3 (USA)** con identidad, historia, jefes,
+cápsulas y banda sonora propias, en **español chileno**, para Linux, Windows,
+macOS y Android.
 
-## ROM identity
+> La historia que Zero nunca alcanzó a contar.
 
-| | |
-|---|---|
-| file | `mmx3.sfc` at the repo root |
-| size | headerless, verified against the digest below |
-| CRC32 | `0xFA0FE671` |
-| SHA-256 | `65b03268afac296330e8ff8d60dd0825879e13ed658b37713c034a3bd074f1d7` |
+[![Desktop host](https://github.com/DanimanX/MMX-Zero-History/actions/workflows/build.yml/badge.svg)](https://github.com/DanimanX/MMX-Zero-History/actions/workflows/build.yml)
 
-A 512-byte SMC copier header is stripped automatically by both the recompiler
-and the launcher, so headered dumps verify against the same digest.
+## Qué es esto
 
-## Status
+Un fork de [MegamanX3SNESRecomp](https://github.com/mstan/MegamanX3SNESRecomp)
+que conserva el motor (ejecución LLE del 65816 con cobertura AOT encima, Cx4
+emulado por instrucción) y le cambia todo lo que se puede cambiar sin tocar el
+cartucho: nombre, identidad visual, línea narrativa, guion, diseño de jefes y
+cápsulas, banda sonora original, controles táctiles y CI multiplataforma.
 
-**Boots and runs live gameplay.** The opening story scenes and save-slot 0
-gameplay have been verified through the debug surface. The native coverage
-manifest emits 5,964 exact variants; unsupported control-flow boundaries fall
-back to the interpreter.
+## Qué **no** es esto
 
-16:9 widescreen is implemented as a default-disabled built-in Mod. It includes
-anchored HUD elements, exact BG1/BG2 gutter tiles from X3's retained level
-maps, and widened enemy activation/visibility/draw windows. Enable it from the
-launcher's **Mods** page; see
-[`docs/WIDESCREEN.md`](docs/WIDESCREEN.md) for addresses and validation.
+**No es un ROM hack.** No trae sprites nuevos de jefes, mapas nuevos, música
+insertada en el SPC ni el texto del juego traducido dentro del cartucho. Eso es
+un proyecto de meses y está especificado, no implementado.
 
-Still open: broad stage-by-stage gameplay/oracle coverage and audio
-verification.
+Lo que hay acá es todo el andamiaje alrededor de eso más el motor real
+compilando. La línea exacta entre "funciona" y "está escrito" está en
+[`docs/ESTADO.md`](docs/ESTADO.md), sin adornos.
 
-This project was stood up from the MegamanXRecomp host layer; every Mega Man
-X 1 specific finding (the fiber task scheduler, the BG2 widescreen shadow, the
-MMX1 WRAM stage gates) was deliberately *not* carried over, because none of it
-is known to hold for Mega Man X3.
+## El ROM
 
-What that means concretely:
+Tenés que poner tu propio dump, legalmente obtenido. Nada derivado del ROM se
+versiona en este repositorio.
 
-* **Execution is LLE-first.** `src/x3_rtl.c` boots the real RESET vector
-  through the interpreter bridge, injects NMI only once the game arms NMITIMEN,
-  and services IRQs as they latch. AOT coverage from `recomp/*.cfg` is layered
-  on as an optimization; anything not covered runs the real ROM bytes.
-* **`recomp/bank00.cfg` remains the hand-written seed** (`auto_vectors` +
-  `tier_down_stubs`), augmented by profile-manifest roots and explicit
-  interpreter-only boundaries.
-* **The interrupt handlers live in WRAM.** The ROM's native NMI/IRQ vectors
-  point at `$00:1FEF` / `$00:1FF3` (the low WRAM mirror), where boot installs
-  `JML` trampolines into a driver block copied out of ROM bank `$08`. That is
-  the same class as SMW's `$7F8000` RAM routine, so the engine's `ram_routine`
-  guarded-AOT mechanism is the eventual path to compiling it; today it runs
-  interpreted.
-* **An IRQ is delivered only when `P.I` is clear.** `g_snes->inIrq` is the
-  hardware IRQ *line*, which stays asserted until `$4211` is read; the 65816
-  only takes it while interrupts are enabled. Mega Man X3 plants `NOP / BRA self`
-  at its WRAM IRQ entry as the *un-armed* state and patches it when it actually
-  wants the raster IRQ — so delivering an IRQ without checking `P.I` parks the
-  guest in that spin loop for the rest of the host frame. Symptom: interpreter
-  step-cap bails every frame and `master_cycles` running tens of frames ahead
-  of the deadline, with the screen stuck in forced blank.
+- **archivo**: `mmx3.sfc` en la raíz del repo
+- **tamaño**: 2 MiB, sin cabecera
+- **CRC32**: `0xFA0FE671`
+- **SHA-256**: `65b03268afac296330e8ff8d60dd0825879e13ed658b37713c034a3bd074f1d7`
 
-### Cx4 — no firmware dump required
-
-Mega Man X3 carries Capcom's **Cx4** (a Hitachi HG51B S169 DSP; internal header
-chipset `$F3`, `$FFBF` sub-type `$10`). The engine emulates it at the
-**instruction level** (`snesrecomp/runner/src/snes/cx4.c`, from ares, ISC) --
-the faithful LLE floor. Without it the game spins forever on the Cx4 status
-register at `$7F5E` and never lifts forced blank.
-
-The chip's internal 1024-entry data ROM is synthesized from six closed-form
-mathematical tables and has been verified bit-exact against a real dump. No
-firmware file is needed. An optional 3072-byte `cx4.rom`, supplied beside the
-executable or through `$SNESRECOMP_CX4_ROM`, only cross-checks the synthesis;
-the file wins if a platform ever produces a mismatch.
-
-Read `docs/CX4.md` before debugging anything Cx4-shaped.
-
-## Debugging
-
-The trace build carries a TCP debug server on port 4384 plus the
-always-on observability rings. Probes QUERY the rings; they never arm a
-recorder and then run a workload.
+Una cabecera de copiador SMC de 512 bytes se descarta automáticamente, tanto
+en el recompilador como en el launcher. Verificalo con:
 
 ```bash
-python tools/dbgprobe.py ppu        # live PPU state
-python tools/dbgprobe.py offrails   # out-of-range cart access ring
-python tools/dbgprobe.py cx4        # Cx4 command ring + unknown-command count
-python tools/dbgprobe.py shot x.bmp # screenshot through the debug surface
+python3 tools/verify_rom.py mmx3.sfc
 ```
+
+## La historia
+
+Años después de Doppler, una excavación bajo Atacama abre la **Bóveda Ω**: el
+archivo personal del Dr. Wily, todavía en línea. Adentro no hay un robot, hay
+un **eco** — la voz y el criterio de Wily, grabados para seguir dando órdenes
+después de muerto. Y lo que el eco quiere no es conquistar el mundo: es
+terminar un trabajo que quedó a medias y recuperar a Zero.
+
+Para eso reactiva ocho revisiones de la unidad **W-00**, el nombre de fábrica
+de Zero. Cada jefe carga un fragmento cifrado de su pasado. X baja a las ocho
+zonas y, por cada jefe que cae, una memoria vuelve a su lugar.
+
+La historia no se cuenta en una cinemática: se cuenta en pedazos, y el pedazo
+que importa es el último — **Wily construyó a Zero para matar a Mega Man**, y
+Zero alcanzó a intentarlo.
+
+![Línea de tiempo](docs/img/linea-tiempo.png)
+
+- Biblia narrativa completa: [`docs/HISTORIA.md`](docs/HISTORIA.md)
+- Guion de todas las cinemáticas, en chileno: [`docs/GUION.md`](docs/GUION.md)
+- Tres finales según cuántos fragmentos juntaste
+
+## Los ocho mavericks
+
+Ocho revisiones W más el jefe final, con anillo de debilidades cerrado: ningún
+orden de etapas deja al jugador sin respuesta.
+
+- **W-01 — Cóndor Cobalto**, Cordillera de los Andes · *Ala Cobalto*
+- **W-02 — Salitre Sierpe**, Desierto de Atacama · *Salmuera*
+- **W-03 — Glaciar Grifo**, Campo de Hielo Sur · *Aliento Blanco*
+- **W-04 — Víbora Caldor**, Volcán Caldor · *Erupción*
+- **W-05 — Marea Mantis**, Fiordos de Chiloé · *Ola Cortante*
+- **W-06 — Jabalí Alerce**, Selva Valdiviana · *Astilla*
+- **W-07 — Búho Reloj**, Puerto del Reloj · *Segundero*
+- **W-08 — Puma Chatarra**, Desarmadero Wily · *Imán Puma*
+- **Ω — Cero-Ω y el Eco de Wily**, Bóveda Ω
+
+![Mapa de etapas](docs/img/mapa-etapas.png)
+
+Patrones de ataque, fases y drops en [`docs/MAVERICKS.md`](docs/MAVERICKS.md).
+
+## Cápsulas errantes
+
+Ninguna cápsula tiene posición fija. Cada etapa tiene **tres nichos**
+autorados, todos alcanzables con el equipo base; cada partida elige uno por
+etapa y reparte los ocho contenidos al azar.
+
+![Cápsulas errantes](docs/img/capsulas.png)
+
+El reparto es determinista y verificable — publicado como semilla en el select
+de etapas:
+
+```console
+$ python3 tools/capsule_shuffle.py --mode speedrun
+semilla 00000000
+  W-01 condor_cobalto   nicho 3  -> Casco      (rompe bloques)
+  W-02 salitre_sierpe   nicho 2  -> Núcleo 01  (fragmento de memoria)
+  W-03 glaciar_grifo    nicho 1  -> Núcleo 02  (fragmento de memoria)
+  ...
+
+$ python3 tools/capsule_shuffle.py --mode historia --slot 1
+semilla CC0D3F32
+  ...
+```
+
+Modos: **Historia** (semilla por perfil/slot/partida), **Speedrun** (semilla
+fija `0`) y **Caos** (semilla nueva cada vez). Contrato completo en
+[`docs/CAPSULAS.md`](docs/CAPSULAS.md); pruebas con
+`python3 tools/test_capsule_shuffle.py`.
+
+## Música
+
+Doce pistas originales a 32 kHz mono, generadas desde código: el tema de la
+Bóveda, el select de etapas, las ocho etapas, la Bóveda Ω y el tema de Zero.
+Misma familia de timbres que un juego de SNES (dos pulsos, triángulo, ruido),
+melodías y progresiones nuevas.
+
+```console
+python3 tools/make_soundtrack.py          # renderiza las doce
+python3 tools/make_soundtrack.py --list   # tempo, compás y mood
+```
+
+Escuchalas en [`assets/audio/`](assets/audio). Diseño y camino de integración
+al motor en [`docs/MUSICA.md`](docs/MUSICA.md).
+
+## Plataformas y controles
+
+- **Linux / Windows / macOS** — host de escritorio SDL2, con soporte real de
+  mando por `SDL_GameController` (Xbox, DualShock, 8BitDo) y teclado
+  remapeable en `keybinds.ini`.
+- **Android** — andamiaje con controles táctiles (D-pad, rombo SNES, hombros,
+  start), auto-ocultado al conectar un mando y zona muerta configurable.
+
+![Android](docs/img/android.png)
+
+La **lógica táctil** sí está probada en el escritorio (15 pruebas: dos dedos a
+la vez, dos dedos en el mismo botón, latcheo al deslizar, saturación de la
+tabla de dedos, espejado exacto):
+
+```console
+bash tools/test_touch_controls.sh
+```
+
+La **app Android no está verificada**: se escribió sin SDK ni NDK disponible en
+la máquina de desarrollo y nunca se ejecutó en un dispositivo. Los pasos que
+faltan están enumerados en [`docs/ANDROID.md`](docs/ANDROID.md) y
+[`docs/ESTADO.md`](docs/ESTADO.md).
 
 ## Build
 
 ```bash
 git submodule update --init --recursive
-cp /path/to/your/dump mmx3.sfc
-bash tools/regen.sh --no-tests      # emit src/gen/*.c + recomp/funcs.h
-cmake -S . -B build -G Ninja -DSNESRECOMP_ENABLE_TRACE=ON
-cmake --build build
+cp /ruta/a/tu/dump mmx3.sfc
+python3 tools/verify_rom.py mmx3.sfc
+bash tools/regen.sh --no-tests          # emite src/gen/*.c + recomp/funcs.h
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSNESRECOMP_SDL_BACKEND=SDL2
+cmake --build build --target MegaManX3SNESRecomp
 ```
 
-`-DSNESRECOMP_ENABLE_TRACE=ON` builds the TCP debug server and the always-on
-observability rings — the bring-up configuration. Omit it for a release build.
+Para depurar con el servidor TCP de 4384 y los anillos de observabilidad,
+configurá con `-DSNESRECOMP_ENABLE_TRACE=ON`.
 
-This title opts into snesrecomp's package loader. The build preloads a
-default-disabled Mega Man X3 Widescreen feature under `mods/packages`; users
-may also install data-only `.snesmod` archives from the launcher's Mods page.
+Sin ROM se puede compilar igual el *setup host*, que es lo que corre CI:
 
-## Disassembly annotations
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSNESRECOMP_SETUP_HOST=ON
+cmake --build build --target MegaManX3SNESRecomp
+```
 
-[bogaa/dizProjects](https://github.com/bogaa/dizProjects) is pinned at
-`third_party/dizProjects`. The tracked [symbol metadata](symbols/README.md)
-includes 70,916 identified instructions and recorded CPU modes. Upstream
-currently provides only a reset label. Regeneration applies the annotations;
-re-import with `python tools/diz_annotations.py --game x3`.
+## Integración continua
 
-## License
+- **`build.yml`** — pruebas (cápsulas + táctil) y compilación del host de
+  escritorio en Linux. Es el gate real.
+- **`rom-build.yml`** — **manual**. Compila el binario jugable en Linux,
+  Windows y macOS leyendo tu ROM desde el secreto `MMX3_ROM_BASE64`, que nunca
+  entra al repositorio. Verifica el SHA-256 antes de aceptar el archivo.
+- **`android.yml`** — **manual y experimental**. Marcado con
+  `continue-on-error`: puede fallar sin romper nada mientras se itera.
+- **`release.yml`** — al empujar una etiqueta `v*`, publica los paquetes de las
+  tres plataformas de escritorio con arte, banda sonora y el aviso de ROM.
 
-PolyForm Noncommercial 1.0.0. See `LICENSE`. Code in this repo is original;
-vendored dependencies under `third_party/` retain their own licenses.
+Solo el gate de Linux se validó localmente de punta a punta. Los jobs de
+Windows, macOS y Android están escritos, no verificados.
 
-The game ROM and any data extracted from it are **not** in this repo and are
-not licensed for redistribution.
+## Estado
 
-Save-state and rewind controls, compatibility and focused verification: [SAVE_STATES.md](docs/SAVE_STATES.md).
+Lo que corre hoy, lo que está escrito y lo que no existe (sprites, mapas,
+música insertada, traducción dentro del cartucho) está separado explícitamente
+en [`docs/ESTADO.md`](docs/ESTADO.md). Si algo de este README suena a que el
+juego nuevo ya está adentro del cartucho, leé ese archivo.
 
-## Coverage survey and regeneration
+## Créditos y licencia
 
-Game-owned generation policy is in `recomp/generate.toml`; the shared framework runs the same hooks for `tools/regen.sh` and launcher rebuilds. See the [2026-10-18 coverage survey](docs/COVERAGE_2026-10-18.md) for verified ROM identity, observed scenes, corrections, and remaining validation limits.
+- Motor: [snesrecomp](https://github.com/RetroPortingToolKit/snesrecomp) y
+  [recomp-ui](https://github.com/RetroPortingToolKit/recomp-ui), con el port
+  original de [mstan](https://github.com/mstan/MegamanX3SNESRecomp).
+- Emulación del Cx4: adaptada de [ares](https://github.com/ares-emulator/ares)
+  (ISC), vía snesrecomp.
+- Anotaciones de desensamblado: [bogaa/dizProjects](https://github.com/bogaa/dizProjects).
+- Todo el contenido nuevo de Zero History —historia, guion, diseño, arte,
+  banda sonora y código— es original de este repositorio.
+- Licencia del código: **PolyForm Noncommercial 1.0.0** (ver [`LICENSE`](LICENSE)).
+  El ROM de Mega Man X3 y cualquier dato extraído de él **no** se distribuyen
+  acá y no están licenciados para redistribución.
+
+Documentación técnica heredada del port original: [`docs/WIDESCREEN.md`](docs/WIDESCREEN.md),
+[`docs/SAVE_STATES.md`](docs/SAVE_STATES.md), [`docs/CX4.md`](docs/CX4.md),
+[`docs/COVERAGE_2026-10-18.md`](docs/COVERAGE_2026-10-18.md).

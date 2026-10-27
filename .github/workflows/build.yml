@@ -1,14 +1,42 @@
 name: Desktop host
+
+# Gate de la línea base: compila el host de escritorio y corre las pruebas de
+# las piezas propias del proyecto (cápsulas y controles táctiles). No necesita
+# el ROM del usuario: `SNESRECOMP_SETUP_HOST=ON` deja el host configurable sin
+# código de invitado generado.
+#
+# El binario *jugable* se produce en la máquina del jugador con su propio dump
+# (`tools/regen.sh` + build). Ver docs/ESTADO.md.
+
 on:
   push:
     branches: [master]
   pull_request:
   workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
-  build:
+  unit-tests:
+    name: Pruebas (cápsulas + táctil)
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cápsulas errantes — contrato de barajado
+        run: python3 tools/test_capsule_shuffle.py
+      - name: Controles táctiles — geometría y multi-touch
+        run: bash tools/test_touch_controls.sh
+      - name: Barajado de ejemplo (speedrun, semilla 0)
+        run: python3 tools/capsule_shuffle.py --mode speedrun
+
+  build:
+    name: Compilar host de escritorio (Linux)
+    runs-on: ubuntu-latest
+    needs: unit-tests
     steps:
       - uses: actions/checkout@v6
         with:
@@ -19,3 +47,9 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSNESRECOMP_SDL_BACKEND=SDL2 -DSNESRECOMP_SETUP_HOST=ON
       - name: Compile shared desktop host and game adapters
         run: cmake --build build --target MegaManX3SNESRecomp --parallel 4
+      - name: Upload setup host
+        uses: actions/upload-artifact@v4
+        with:
+          name: mmx-zero-history-linux-setup-host
+          path: build/MegaManX3SNESRecomp
+          if-no-files-found: error

@@ -1,0 +1,132 @@
+name: Build jugable (con ROM del usuario)
+
+# Construye el binario *jugable* en las tres plataformas de escritorio.
+#
+# El ROM nunca entra al repositorio: se lee de un secreto del repositorio,
+# `MMX3_ROM_BASE64`, que cada dueño del dump define con:
+#
+#   base64 -w0 mmx3.sfc | gh secret set MMX3_ROM_BASE64
+#
+# Sin ese secreto el job falla en el primer paso con un mensaje claro, en vez
+# de intentar compilar algo que no va a arrancar.
+#
+# Es manual a propósito: los artefactos resultantes contienen código derivado
+# del ROM y solo deben quedar en manos de quien tiene derecho a usarlo.
+
+on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Plataformas (linux, windows, macos, todas)'
+        required: false
+        default: 'todas'
+
+permissions:
+  contents: read
+
+jobs:
+  rom-check:
+    name: Verificar ROM
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          ROM_B64: ${{ secrets.MMX3_ROM_BASE64 }}
+        run: |
+          if [ -z "$ROM_B64" ]; then
+            echo "::error::Falta el secreto MMX3_ROM_BASE64."
+            echo "::error::Defínelo con: base64 -w0 mmx3.sfc | gh secret set MMX3_ROM_BASE64"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.name }}
+    needs: rom-check
+    if: needs.rom-check.outputs.ready == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            artifact: MMXZeroHistory-playable-linux-x86_64
+          - name: Windows
+            os: windows-latest
+            artifact: MMXZeroHistory-playable-windows-x86_64
+          - name: macOS
+            os: macos-latest
+            artifact: MMXZeroHistory-playable-macos-arm64
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libsdl2-dev libgl1-mesa-dev
+
+      - name: Instalar dependencias (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja sdl2
+
+      - name: Instalar dependencias (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install ninja --yes --no-progress
+          vcpkg install sdl2:x64-windows
+
+      - name: Materializar el ROM desde el secreto
+        shell: bash
+        env:
+          ROM_B64: ${{ secrets.MMX3_ROM_BASE64 }}
+        run: |
+          printf '%s' "$ROM_B64" | base64 -d > mmx3.sfc
+          python3 tools/verify_rom.py mmx3.sfc
+
+      - name: Regenerar código AOT
+        run: bash tools/regen.sh --no-tests
+
+      - name: Configurar
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DSNESRECOMP_SDL_BACKEND=SDL2 \
+              -DCMAKE_TOOLCHAIN_FILE="$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          else
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DSNESRECOMP_SDL_BACKEND=SDL2
+          fi
+
+      - name: Compilar
+        shell: bash
+        run: cmake --build build --target MegaManX3SNESRecomp --parallel 4
+
+      - name: Empaquetar (sin el ROM)
+        shell: bash
+        run: |
+          mkdir -p dist
+          exe="build/MegaManX3SNESRecomp"
+          if [ -f "${exe}.exe" ]; then exe="${exe}.exe"; fi
+          cp "$exe" "dist/$exe"
+          cp README.md LICENSE VERSION dist/
+          cp docs/ROM_README.txt dist/ROM_README.txt
+          cd dist && zip -r "../${{ matrix.artifact }}.zip" . >/dev/null
+
+      - name: Subir artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.zip
+          if-no-files-found: error

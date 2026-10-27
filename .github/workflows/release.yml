@@ -1,0 +1,118 @@
+name: Release
+
+# Publica el artefacto de una etiqueta v*: host de escritorio para Linux,
+# Windows y macOS, más el arte y la banda sonora del proyecto.
+#
+# ADVERTENCIA LEGAL: este repositorio no contiene ni distribuye el ROM. Los
+# binarios publicados acá son el *setup host* (sin código de invitado); cada
+# jugador compila su propia versión jugable con su propio dump. Ver
+# docs/ESTADO.md § "Lo que NO existe".
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Etiqueta a publicar (ej. v0.0.1)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            artifact: MMXZeroHistory-linux-x86_64
+          - name: Windows
+            os: windows-latest
+            artifact: MMXZeroHistory-windows-x86_64
+          - name: macOS
+            os: macos-latest
+            artifact: MMXZeroHistory-macos-arm64
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Instalar dependencias (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libsdl2-dev libgl1-mesa-dev
+
+      - name: Instalar dependencias (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja sdl2
+
+      - name: Instalar dependencias (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install ninja --yes --no-progress
+          vcpkg install sdl2:x64-windows
+
+      - name: Configurar
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DSNESRECOMP_SDL_BACKEND=SDL2 \
+              -DSNESRECOMP_SETUP_HOST=ON \
+              -DCMAKE_TOOLCHAIN_FILE="$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          else
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DSNESRECOMP_SDL_BACKEND=SDL2 \
+              -DSNESRECOMP_SETUP_HOST=ON
+          fi
+
+      - name: Compilar
+        shell: bash
+        run: cmake --build build --target MegaManX3SNESRecomp --parallel 4
+
+      - name: Empaquetar
+        shell: bash
+        run: |
+          mkdir -p dist
+          exe="build/MegaManX3SNESRecomp"
+          if [ -f "${exe}.exe" ]; then exe="${exe}.exe"; fi
+          cp "$exe" "dist/$exe"
+          cp README.md LICENSE VERSION dist/
+          cp docs/ROM_README.txt dist/ROM_README.txt
+          mkdir -p dist/audio dist/img
+          cp assets/audio/*.ogg dist/audio/ 2>/dev/null || true
+          cp docs/img/*.png dist/img/ 2>/dev/null || true
+          cd dist && zip -r "../${{ matrix.artifact }}.zip" . >/dev/null
+
+      - name: Subir artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.zip
+          if-no-files-found: error
+
+  publish:
+    name: Publicar release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Crear release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: MMX Zero History ${{ github.event.inputs.tag || github.ref_name }}
+          body_path: RELEASE_NOTES_v0.0.1.md
+          files: artifacts/*.zip
+          draft: false
+          prerelease: false

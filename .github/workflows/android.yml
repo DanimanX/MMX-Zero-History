@@ -1,0 +1,82 @@
+name: Android (experimental)
+
+# Andamiaje Android. NO está verificado: en la máquina donde se preparó la
+# versión 0.0.1 no había SDK ni NDK, así que este job nunca se ejecutó con
+# éxito confirmado. Por eso:
+#
+#   * solo corre a mano (workflow_dispatch);
+#   * `continue-on-error: true`, para que un fallo no marque el repositorio
+#     como roto mientras se itera;
+#   * no participa de la release.
+#
+# Ver docs/ANDROID.md y docs/ESTADO.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      abi:
+        description: 'ABI a compilar'
+        required: false
+        default: 'arm64-v8a'
+        type: choice
+        options: ['arm64-v8a', 'armeabi-v7a', 'x86_64']
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: APK (sin verificar)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Android SDK + NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar NDK r27 y CMake
+        run: |
+          sdkmanager "ndk;27.0.12077973" "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> "$GITHUB_ENV"
+
+      - name: Instalar dependencias de build
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Compilar host nativo para Android
+        run: |
+          cmake -S . -B build-android -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI="${{ github.event.inputs.abi }}" \
+            -DANDROID_PLATFORM=android-24 \
+            -DSNESRECOMP_SDL_BACKEND=SDL2 \
+            -DSNESRECOMP_SETUP_HOST=ON
+          cmake --build build-android --target MegaManX3SNESRecomp --parallel 4
+
+      - name: Copiar el binario al proyecto Android
+        run: |
+          mkdir -p "android/app/src/main/jniLibs/${{ github.event.inputs.abi }}"
+          cp build-android/MegaManX3SNESRecomp \
+             "android/app/src/main/jniLibs/${{ github.event.inputs.abi }}/libMegaManX3SNESRecomp.so"
+
+      - name: Gradle wrapper
+        working-directory: android
+        run: gradle wrapper --gradle-version 8.7
+
+      - name: assembleDebug
+        working-directory: android
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mmx-zero-history-android-${{ github.event.inputs.abi }}
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn

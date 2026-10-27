@@ -1,0 +1,60 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'cl.zerohistory.mmx'
+    compileSdk 34
+    ndkVersion '27.0.12077973'
+
+    defaultConfig {
+        applicationId 'cl.zerohistory.mmx'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '0.0.1'
+        ndk {
+            // El host compilado por CMake se empaqueta por ABI.
+            abiFilters 'arm64-v8a'
+        }
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_shared'
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            // Solo la capa táctil. El binario del juego viene de jniLibs/.
+            path 'src/main/cpp/CMakeLists.txt'
+            version '3.22.1'
+        }
+    }
+
+    sourceSets {
+        main {
+            // libMegaManX3SNESRecomp.so lo deja acá el build de CMake del motor.
+            jniLibs.srcDirs = ['src/main/jniLibs']
+            // assets/ es donde el usuario pone su propio mmx3.sfc. No se commitea.
+            assets.srcDirs = ['src/main/assets']
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Firma: usar el keystore del entorno de CI, nunca del repo.
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // SDL2 para Android se vendoriza como módulo local; ver docs/ANDROID.md.
+    // implementation project(':sdl2')
+}

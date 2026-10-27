@@ -37,3 +37,17 @@ CMakeCache.txt
 /config.local.ini
 /keybinds.ini
 /tier2_*.json
+
+# Zero History — Android build output and user-supplied assets
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/local.properties
+/android/app/src/main/jniLibs/
+/android/app/src/main/assets/*.sfc
+/android/app/src/main/assets/*.smc
+/build-android*/
+/dist/
+
+# Soundtrack render scratch (the committed artifacts are the .ogg files)
+*.wav

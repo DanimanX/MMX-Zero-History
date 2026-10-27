@@ -1,0 +1,5 @@
+// Proyecto Android de MMX Zero History.
+// El host gráfico y de audio es SDL2, ya vendorizado por snesrecomp.
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}
