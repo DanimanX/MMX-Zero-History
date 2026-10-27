@@ -40,17 +40,39 @@ Esto es lo que cambia de verdad al abrir el juego, y es todo:
 - **El diagnóstico**: la pantalla de entrada de Android muestra la versión de
   la build y el campo que el motor eligió, leídos de `native.log`.
 
-Y esto es lo que **no** cambia, porque está diseñado y no insertado: la
-historia de la Bóveda Ω, los ocho mavericks, las cápsulas errantes, el guion en
-chileno y la banda sonora **no están dentro del juego**. Si abrís el APK y ves
-la intro, el select de etapas y los jefes originales de Mega Man X3, es el
-comportamiento esperado de esta versión, no un fallo de instalación.
+Y esto es lo que **no** cambia todavía: la historia de la Bóveda Ω, los ocho
+mavericks, las cápsulas errantes, el guion en chileno y la banda sonora **no
+están dentro del juego**. Si abrís el APK y ves la intro, el select de etapas y
+los jefes originales de Mega Man X3, es el comportamiento esperado de esta
+versión, no un fallo de instalación.
 
-El motor fijado trae un sistema de parches de texto/VRAM en tiempo de
-ejecución (`snes_text_xlate`, en `snesrecomp/runner/src`) que este proyecto
-**todavía no usa**: es la vía para traducir el guion sin tocar el cartucho, y
-necesita las tablas de glifos y las direcciones reales del ROM. Está anotado
-como el siguiente trabajo grande en [`docs/ESTADO.md`](docs/ESTADO.md).
+### El contenido ya se aplica al ROM (lo que se puede verificar)
+
+Desde la 0.0.5 hay una tabla de contenido propia,
+[`content/zerohistory.toml`](content/zerohistory.toml), que el motor aplica
+sobre la **copia en memoria** de tu dump después de verificar su identidad:
+
+```console
+adb shell cat /sdcard/Android/data/cl.zerohistory.mmx/files/native.log | grep contenido
+# [mmx] contenido: tabla content/zerohistory.toml, idioma es, 1 parche(s) de ROM, 0 de VRAM
+# [mmx] contenido: 1/1 parche(s) de ROM aplicados
+```
+
+Cada parche va guardado por contenido (`source_hex`): si los bytes del destino
+no son los del cartucho original, no se aplica nada y el log lo dice. Tu
+archivo nunca se modifica. Para una copia parcheada en disco:
+
+```console
+python3 tools/x3_content_patch.py --check mmx3.sfc
+python3 tools/x3_content_patch.py --apply mmx3.sfc
+```
+
+Hoy el parche incluido es la identidad interna del cartucho (cabecera LoROM,
+`0x7FC0`), el único campo cuya posición fija la especificación del formato.
+El resto —guion, jefes, mapas, música— necesita direcciones y glifos
+derivados del dump real; el mecanismo está listo y esperando esos datos. El
+detalle completo, con el formato y las reglas, está en
+[`docs/CONTENIDO.md`](docs/CONTENIDO.md).
 
 ## El ROM
 
@@ -196,6 +218,12 @@ binario no trae el juego, lo carga desde tu dump.
    copia a la carpeta de la app, se verifica el SHA-256 y se descarta la
    cabecera de copiador si la trae.
 4. La app arranca el motor con el campo 16:9.
+
+El botón **Historia y jefes** abre la Bóveda Ω, los ocho mavericks con su arma,
+el anillo de debilidades y las reglas de las cápsulas: ese contenido vive en la
+app, no en el cartucho.
+
+![Historia y jefes en Android](docs/img/android-historia.png)
 
 ![Pantalla de entrada en Android: ROM verificado, build y campo 16:9](docs/img/android-rom-setup.png)
 

@@ -119,6 +119,16 @@ public class RomSetupActivity extends Activity {
         playParams.topMargin = pad / 2;
         column.addView(playButton, playParams);
 
+        Button loreButton = new Button(this);
+        loreButton.setText("Historia y jefes");
+        loreButton.setOnClickListener(v ->
+                startActivity(new Intent(this, LoreActivity.class)));
+        LinearLayout.LayoutParams loreParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        loreParams.topMargin = pad / 4;
+        column.addView(loreButton, loreParams);
+
         TextView help = new TextView(this);
         help.setText(
                 "El juego no incluye el cartucho.\n\n"

@@ -91,6 +91,12 @@ echo "   staged SDL Java surface from $SDL_SRC"
 # The mod runtime reads its catalog from the filesystem, beside the executable.
 # On Android it is packaged as an asset and AssetInstaller copies it to the
 # app's external files directory on first launch.
+if [ -d "$ROOT/content" ]; then
+  rm -rf "$ROOT/android/app/src/main/assets/content"
+  cp -r "$ROOT/content" "$ROOT/android/app/src/main/assets/content"
+  echo "   staged content table into assets/content"
+fi
+
 if [ -d "$ROOT/mods/preloaded/packages" ]; then
   rm -rf "$ROOT/android/app/src/main/assets/mods"
   mkdir -p "$ROOT/android/app/src/main/assets/mods/preloaded"

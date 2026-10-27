@@ -39,6 +39,13 @@ final class AssetInstaller {
             // The game still boots without mods; it just keeps the 4:3
             // default. A missing catalog is not a reason to crash the app.
         }
+        try {
+            // Tabla de contenido propia (content/zerohistory.toml). Sin ella el
+            // motor arranca igual: los parches son un extra, no un requisito.
+            copyTree(context, "content", new File(root, "content"));
+        } catch (IOException ignored) {
+            // Same rule: no catalog, no patch. The game still runs.
+        }
     }
 
     /**

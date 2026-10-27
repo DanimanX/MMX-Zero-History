@@ -31,6 +31,7 @@
 #include "snes/ws_shadow.h"
 #include "types.h"
 #include "widescreen.h"
+#include "x3_content.h"
 
 extern Snes *g_snes;
 extern Dma *g_dma;
@@ -867,6 +868,9 @@ static void x3_patch_ws_interp_obj_windows(void) {
 void X3DrawPpuFrame(void) {
   /* Presentation only. IRQs are serviced inside RunOneFrameOfGame while the
    * bridge advances the beam — never mutate g_cpu here. */
+  /* Contenido propio sobre la copia en memoria del ROM del jugador. El runner
+   * aplica una vez; acá sólo se bombea. */ 
+  X3Content_Tick();
   SimpleHdma hdma_chans[8];
   dma_startDma(g_dma, g_snesrecomp_last_hdmaen, true);
   for (int ch = 0; ch < 8; ch++)

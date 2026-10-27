@@ -1,4 +1,4 @@
-# Estado real de la versión 0.0.4
+# Estado real de la versión 0.0.5
 
 Este documento existe porque es fácil confundir "está documentado" con "está
 implementado". Acá está la línea entre las dos cosas, sin adornos.
@@ -52,7 +52,7 @@ implementado". Acá está la línea entre las dos cosas, sin adornos.
   quedaron adjuntos a la release `v0.0.1`. El gate `Desktop host` corrió verde
   en Linux (pruebas + compilación).
 
-## Qué se ve al jugar (0.0.4)
+## Qué se ve al jugar (0.0.5)
 
 Esta es la respuesta corta a «instalé el APK y arranca el Mega Man X3
 original». Es correcto: el juego **es** el cartucho original, ejecutado por el
@@ -67,12 +67,30 @@ No hay historia nueva, jefes nuevos, cápsulas, guion en chileno ni banda sonora
 dentro del juego. Todo eso está diseñado en `docs/` y **no insertado**; el
 detalle de por qué es un trabajo de meses está más abajo, en «Lo que NO existe».
 
-El motor fijado (`snesrecomp`) sí trae la herramienta para hacerlo sin tocar el
-cartucho: `runner/src/snes_text_xlate.cpp` aplica parches de ROM, RAM y VRAM en
-memoria de invitado, con tabla de glifos y guardas de contenido. Ningún puerto
-de este repositorio la inicializa todavía (`snes_text_xlate_init_c` no tiene
-llamador). Es el camino correcto para el guion y para arte de pantallas
-concretas, y requiere derivar del ROM las direcciones y los glifos reales.
+### El contenido ya se aplica (0.0.5)
+
+`src/x3_content.c` inicializa `snes_text_xlate` con
+`content/zerohistory.toml` y bombea un tick por frame desde
+`X3DrawPpuFrame`. La tabla se aplica **sobre la copia en memoria** del ROM del
+jugador, guardada por contenido: un `source_hex` que no coincide no escribe
+nada. Verificado en el emulador Android con un dump sintético que lleva la
+cabecera real:
+
+```
+[mmx] contenido: tabla content/zerohistory.toml, idioma es, 1 parche(s) de ROM, 0 de VRAM
+[mmx] contenido: 1/1 parche(s) de ROM aplicados
+```
+
+El parche incluido es la identidad interna del cartucho (cabecera LoROM,
+`0x7FC0`). `tools/x3_content_patch.py` aplica la misma tabla a una copia en
+disco con checksum SNES recalculado, y `tools/test_content_patch.py` cubre el
+motor con imágenes sintéticas.
+
+Lo que **sigue** sin insertarse en el juego es todo lo demás: guion, jefes,
+mapas y música. Eso exige derivar del dump los glifos (mapa carácter → byte de
+la fuente de X3), las direcciones de los bloques de texto y los tiles
+comprimidos. Adivinarlos escribe basura legible por el juego, así que no se
+hace. Ver `docs/CONTENIDO.md`.
 
 ## Lo que está escrito pero NO ejecutado
 

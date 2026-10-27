@@ -58,3 +58,6 @@ CMakeCache.txt
 
 # Mod catalog staged into the APK assets by tools/build_android.sh
 /android/app/src/main/assets/mods/
+
+# Content table staged into the APK assets by tools/build_android.sh
+/android/app/src/main/assets/content/

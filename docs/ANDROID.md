@@ -58,10 +58,16 @@ el campo 16:9. La pantalla de entrada lo dice explícitamente y muestra la
 versión de la build y el ancho de campo elegido, leídos de `native.log`
 (`[mmx] build=…`, `[mmx] video: 342x224 (widescreen=1, …)`).
 
-Vía para cambiarlo sin tocar el cartucho: `snes_text_xlate`
-(`snesrecomp/runner/src/snes_text_xlate.cpp`) aplica parches de ROM/RAM/VRAM en
-memoria del invitado. No está inicializado por ningún puerto todavía; necesita
-las tablas de glifos y las direcciones reales del ROM.
+Desde la 0.0.5 ese mecanismo **sí está inicializado**: `src/x3_content.c`
+carga `content/zerohistory.toml` (extraído de los assets al arrancar) y el
+motor aplica sus parches sobre la copia en memoria del ROM, guardados por
+contenido. La app lo reporta en `native.log`:
+
+```console
+adb shell cat /sdcard/Android/data/cl.zerohistory.mmx/files/native.log | grep contenido
+```
+
+Detalle del formato y de lo que falta en [`CONTENIDO.md`](CONTENIDO.md).
 
 ## Configuración y diagnóstico
 
@@ -127,7 +133,7 @@ El script configura CMake con `MMX_LLE_ONLY=ON` y SDL3, compila
 SDL, copia el catálogo de mods a `assets/mods`, genera/usa un keystore y corre
 `gradle assembleRelease`. Salida: `dist/MMXZeroHistory-android-<abi>.apk`.
 
-## Estado real (v0.0.4)
+## Estado real (v0.0.5)
 
 Verificado en un emulador Android 14 (x86_64, KVM):
 

@@ -1,0 +1,50 @@
+# Tabla de contenido de MMX Zero History.
+#
+# La lee el motor al arrancar (`snes_text_xlate_init_c`, en
+# snesrecomp/runner/src/snes_text_xlate.cpp) y la aplica sobre la copia en
+# memoria del ROM del jugador, nunca sobre el archivo. Cada parche está
+# guardado por contenido: si los bytes del destino no son exactamente los del
+# cartucho original, el parche no se aplica. Un ROM ajeno no puede quedar a
+# medio parchear.
+#
+# Formato: el de `snes_text_xlate`. Secciones:
+#
+#   [[rom_patch]]   address       offset lineal del ROM (0x7FC0 = cabecera LoROM)
+#                   source_hex    bytes esperados
+#                   <lang>_hex    bytes de reemplazo, mismo tamaño (es_hex)
+#
+#   [[vram_patch]]  address (palabra de VRAM), source_hex, <lang>_hex
+#                   [, guard_address, guard_hex]
+#   [[ram_patch]]   address (offset de WRAM), source_hex, <lang>_hex
+#
+# El sufijo `_hex` y el nombre del idioma son parte del contrato del parser:
+# toma la clave, le quita `_hex` y usa el resto como idioma. `source = "..."`
+# se guardaría como texto —parche sin bytes de origen, nunca se aplica— y
+# `target_es_hex` se guardaría bajo el idioma `target_es`, que nadie consulta.
+# `tools/test_content_patch.py` fija este contrato para que no vuelva a
+# desviarse. Ver snesrecomp/docs/RUNTIME_LOCALIZATION.md.
+#
+# Regla: `source` y el reemplazo deben medir lo mismo. Un nombre más largo no
+# se puede escribir encima; hay que buscar el bloque de texto y rehacerlo
+# entero, y eso exige las direcciones reales del cartucho (ver
+# docs/CONTENIDO.md, "Qué falta").
+
+schema = 1
+default_lang = "es"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Identidad interna del cartucho
+#
+# Cabecera LoROM, offset 0x7FC0: 21 bytes de nombre interno, rellenos con
+# espacios. El original dice "MEGAMAN X3" + 11 espacios; queda "MMX ZERO
+# HISTORY" + 5. Se ve en cualquier explorador de ROMs, en el gestor de
+# guardados y en las herramientas de volcado. El juego no lo dibuja.
+#
+# Los 21 bytes están fijados por la especificación del formato, no adivinados:
+# es el único campo del cartucho cuya posición se puede afirmar sin tener el
+# dump delante.
+# ─────────────────────────────────────────────────────────────────────────────
+[[rom_patch]]
+address = 0x7FC0
+source_hex = "4d4547414d414e2058332020202020202020202020"
+es_hex = "4d4d58205a45524f20484953544f52592020202020"

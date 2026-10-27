@@ -36,6 +36,8 @@ jobs:
         run: bash tools/test_touch_controls.sh
       - name: Campo 16:9 — ancho de frame y presentación
         run: bash tools/test_display_width.sh
+      - name: Contenido — aplicación de parches al ROM
+        run: python3 tools/test_content_patch.py
       - name: Barajado de ejemplo (speedrun, semilla 0)
         run: python3 tools/capsule_shuffle.py --mode speedrun
 

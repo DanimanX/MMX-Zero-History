@@ -125,6 +125,9 @@ jobs:
           # Catálogo de mods + audio: sin mods/ el 16:9 no se activa aunque
           # el paquete preloaded exista en el árbol.
           cp -r build/mods dist/mods 2>/dev/null || true
+          # Tabla de contenido: sin ella el motor no aplica
+          # ningun parche sobre la copia en memoria del ROM.
+          cp -r content dist/content 2>/dev/null || true
           mkdir -p dist/audio
           cp assets/audio/*.ogg dist/audio/ 2>/dev/null || true
           # zip existe en Linux y macOS; Git Bash en Windows no lo trae, pero
