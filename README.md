@@ -175,6 +175,13 @@ binario no trae el juego, lo carga desde tu dump.
 
 ![Pantalla de entrada en Android](docs/img/android-rom-setup.png)
 
+Para capturar una pantalla de juego —la etapa 1, por ejemplo— con tu dump ya
+cargado:
+
+```console
+tools/capture_android.sh docs/img/android-etapa-1.png
+```
+
 Desde la 0.0.3 la app **no se cierra al abrir**: si falta el ROM (o no es el
 dump correcto) lo dice en pantalla, y si el motor se corta después de arrancar
 muestra el final de `native.log` en vez de desaparecer.
