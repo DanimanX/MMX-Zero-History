@@ -23,6 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # test_display_width.sh compila src/x3_display.c, que incluye
+          # widescreen.h del submódulo del motor.
+          submodules: recursive
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
