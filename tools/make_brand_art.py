@@ -294,7 +294,7 @@ def banner() -> None:
     for name in ("Linux", "Windows", "macOS", "Android"):
         x += pill(img, x, 736, name, CYAN if name != "Android" else GREEN) + 14
 
-    w = pill(img, M, 832, "v0.0.3 — Bóveda Ω", VIOLET, 24)
+    w = pill(img, M, 832, "v0.0.4 — Bóveda Ω", VIOLET, 24)
     pill(img, M + w + 14, 832, "16:9 EN TODAS LAS VERSIONES", AMBER, 24)
 
     img.convert("RGB").save(OUT / "banner.png", quality=94)

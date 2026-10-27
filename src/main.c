@@ -102,6 +102,10 @@ int main(int argc, char **argv) {
     dup2(fileno(log), STDOUT_FILENO);
   }
   fprintf(stderr, "[mmx] main entry (cwd=%s)\n", getenv("MMX_WORKDIR") ? getenv("MMX_WORKDIR") : "?");
+#ifdef SNESRECOMP_BUILD_VERSION
+  /* La pantalla de entrada lee esta línea para enseñar qué build corrió. */
+  fprintf(stderr, "[mmx] build=%s\n", SNESRECOMP_BUILD_VERSION);
+#endif
   int rc = mmx_desktop_entry(argc, argv);
   fprintf(stderr, "[mmx] main exit rc=%d\n", rc);
   return rc;

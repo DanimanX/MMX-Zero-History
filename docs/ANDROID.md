@@ -48,6 +48,21 @@ RomSetupActivity (launcher)
   siguen cuadradas en cualquier aspecto. Los insets del notch y de la barra de
   gestos se aplican antes de dibujar y de hacer hit-test.
 
+## Qué se juega (y qué no)
+
+El APK ejecuta el cartucho del jugador tal cual: recompilado, verificado e
+intacto. La historia nueva, los jefes, las cápsulas, el guion en chileno y la
+banda sonora están diseñados en `docs/` y **no insertados** en el juego. Lo que
+el proyecto aporta en pantalla es el nombre, el icono, la placa de arranque y
+el campo 16:9. La pantalla de entrada lo dice explícitamente y muestra la
+versión de la build y el ancho de campo elegido, leídos de `native.log`
+(`[mmx] build=…`, `[mmx] video: 342x224 (widescreen=1, …)`).
+
+Vía para cambiarlo sin tocar el cartucho: `snes_text_xlate`
+(`snesrecomp/runner/src/snes_text_xlate.cpp`) aplica parches de ROM/RAM/VRAM en
+memoria del invitado. No está inicializado por ningún puerto todavía; necesita
+las tablas de glifos y las direcciones reales del ROM.
+
 ## Configuración y diagnóstico
 
 Todo lo que el host escribe vive en el directorio de trabajo de la app
@@ -112,7 +127,7 @@ El script configura CMake con `MMX_LLE_ONLY=ON` y SDL3, compila
 SDL, copia el catálogo de mods a `assets/mods`, genera/usa un keystore y corre
 `gradle assembleRelease`. Salida: `dist/MMXZeroHistory-android-<abi>.apk`.
 
-## Estado real (v0.0.3)
+## Estado real (v0.0.4)
 
 Verificado en un emulador Android 14 (x86_64, KVM):
 

@@ -1,4 +1,4 @@
-# Estado real de la versión 0.0.3
+# Estado real de la versión 0.0.4
 
 Este documento existe porque es fácil confundir "está documentado" con "está
 implementado". Acá está la línea entre las dos cosas, sin adornos.
@@ -51,6 +51,28 @@ implementado". Acá está la línea entre las dos cosas, sin adornos.
   setup host en Linux, Windows y macOS en runners reales, y los tres `.zip`
   quedaron adjuntos a la release `v0.0.1`. El gate `Desktop host` corrió verde
   en Linux (pruebas + compilación).
+
+## Qué se ve al jugar (0.0.4)
+
+Esta es la respuesta corta a «instalé el APK y arranca el Mega Man X3
+original». Es correcto: el juego **es** el cartucho original, ejecutado por el
+intérprete LLE. Lo único que el proyecto cambia en pantalla es:
+
+- el nombre, el icono y la placa de arranque de la app;
+- el campo 16:9 (342×224) con el HUD y las ventanas de objetos ajustadas;
+- la pantalla de entrada, con la importación verificada del ROM y el
+  diagnóstico (`build=`, `video: 342x224`).
+
+No hay historia nueva, jefes nuevos, cápsulas, guion en chileno ni banda sonora
+dentro del juego. Todo eso está diseñado en `docs/` y **no insertado**; el
+detalle de por qué es un trabajo de meses está más abajo, en «Lo que NO existe».
+
+El motor fijado (`snesrecomp`) sí trae la herramienta para hacerlo sin tocar el
+cartucho: `runner/src/snes_text_xlate.cpp` aplica parches de ROM, RAM y VRAM en
+memoria de invitado, con tabla de glifos y guardas de contenido. Ningún puerto
+de este repositorio la inicializa todavía (`snes_text_xlate_init_c` no tiene
+llamador). Es el camino correcto para el guion y para arte de pantallas
+concretas, y requiere derivar del ROM las direcciones y los glifos reales.
 
 ## Lo que está escrito pero NO ejecutado
 

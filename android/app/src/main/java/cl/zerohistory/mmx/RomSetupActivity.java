@@ -36,6 +36,7 @@ public class RomSetupActivity extends Activity {
 
     private TextView status;
     private TextView logTitle;
+    private TextView buildView;
     private TextView logView;
     private Button pickButton;
     private Button playButton;
@@ -52,11 +53,11 @@ public class RomSetupActivity extends Activity {
         AssetInstaller.install(this);
         setContentView(buildUi());
         refresh();
-        // Con el ROM en su sitio, abrir la app es jugar. El botón queda igual
-        // por si el motor vuelve y hay que reintentar.
-        if (RomStore.isReady(this) && !startedOnce) {
-            startGame();
-        }
+        // No se arranca el motor solo. Esta pantalla es la casa de la app: es
+        // donde se ve qué build corre, qué campo eligió el motor y qué cambia
+        // esta versión. Arrancar de automático la escondía para siempre y, si
+        // el motor moría, el jugador volvía a caer en un arranque sin
+        // explicación. Un toque en JUGAR es una decisión, no una sorpresa.
     }
 
     @Override
@@ -139,6 +140,30 @@ public class RomSetupActivity extends Activity {
         logTitle.setVisibility(View.GONE);
         column.addView(logTitle);
 
+        buildView = new TextView(this);
+        buildView.setTextColor(Color.rgb(110, 255, 210));
+        buildView.setTextSize(12);
+        buildView.setTypeface(android.graphics.Typeface.MONOSPACE);
+        buildView.setVisibility(View.GONE);
+        column.addView(buildView);
+
+        TextView scope = new TextView(this);
+        scope.setText(
+                "Qué cambia esta build y qué no\n\n"
+                        + "Esta app es una recompilación del cartucho: ejecuta los mismos "
+                        + "bytes de tu dump. Lo que agrega el proyecto, y se puede ver:"
+                        + "\n· nombre «MMX Zero History» y arte de arranque;"
+                        + "\n· campo 16:9 (342×224) con HUD y enemigos ajustados;"
+                        + "\n· importación verificada del ROM y diagnóstico."
+                        + "\n\nLo que NO trae, porque está diseñado y no insertado en el "
+                        + "cartucho: historia nueva, jefes nuevos, cápsulas, texto en "
+                        + "español y banda sonora dentro del juego. El cartucho se juega "
+                        + "igual que el original; ver docs/ESTADO.md.");
+        scope.setTextColor(Color.rgb(150, 162, 180));
+        scope.setTextSize(12);
+        scope.setPadding(0, pad, 0, pad / 2);
+        column.addView(scope);
+
         logView = new TextView(this);
         logView.setTextColor(Color.rgb(200, 210, 225));
         logView.setTextSize(11);
@@ -170,6 +195,7 @@ public class RomSetupActivity extends Activity {
         playButton.setEnabled(ready);
         playButton.setAlpha(ready ? 1f : 0.4f);
         pickButton.setText(ready ? "Cambiar ROM" : "Elegir mi mmx3.sfc");
+        showBuildInfo();
     }
 
     private void pickRom() {
@@ -197,6 +223,8 @@ public class RomSetupActivity extends Activity {
         if (result.ok) {
             status.setText(result.message);
             status.setTextColor(Color.rgb(110, 255, 210));
+            // Importar es una acción explícita: si salió bien, jugar.
+            startGame();
         } else {
             showMessage(result.message);
             status.setTextColor(Color.rgb(255, 92, 92));
@@ -216,6 +244,39 @@ public class RomSetupActivity extends Activity {
         launchedGame = true;
         startedOnce = true;
         startActivity(new Intent(this, MainActivity.class));
+    }
+
+    /**
+     * El motor deja dos líneas al arrancar: `[mmx] build=<versión>` y
+     * `[mmx] video: 342x224 (widescreen=1, ...)`. Son la prueba de que esta
+     * corrida es la build del proyecto y de que el campo ancho se aplicó:
+     * sin ellas, «se ve como el original» no se puede ni confirmar ni negar.
+     */
+    private void showBuildInfo() {
+        String log = tail(new File(RomStore.dir(this), "native.prev.log"), 4096);
+        if (log == null) log = tail(new File(RomStore.dir(this), "native.log"), 4096);
+        String build = firstLineStartingWith(log, "[mmx] build=");
+        String video = firstLineStartingWith(log, "[mmx] video:");
+        if (build == null && video == null) {
+            buildView.setVisibility(View.GONE);
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        if (build != null) sb.append(build.replace("[mmx] ", ""));
+        if (video != null) {
+            if (sb.length() > 0) sb.append('\n');
+            sb.append(video.replace("[mmx] ", ""));
+        }
+        buildView.setText(sb.toString());
+        buildView.setVisibility(View.VISIBLE);
+    }
+
+    private static String firstLineStartingWith(String text, String prefix) {
+        if (text == null) return null;
+        for (String line : text.split("\n")) {
+            if (line.startsWith(prefix)) return line.trim();
+        }
+        return null;
     }
 
     /**

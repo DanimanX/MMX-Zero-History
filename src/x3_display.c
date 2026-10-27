@@ -1,6 +1,7 @@
 #include "x3_display.h"
 
 #include <stddef.h>
+#include <stdio.h>
 
 #include "widescreen.h"
 
@@ -20,10 +21,24 @@ static int ClampEven(int64_t value) {
  * the host letterbox any extra screen. */
 #define MMX_MAX_FRAME_WIDTH 342
 
+/* One line per run, so the launcher screen can show what the engine actually
+ * chose. Without it there is no way to tell a 16:9 field from a 4:3 one on a
+ * phone, and "the game looks stock" becomes unfalsifiable. */
+static void announce_frame_width(int width, int drawable_width,
+                                 int drawable_height, int widescreen) {
+  static int announced;
+  if (announced) return;
+  announced = 1;
+  fprintf(stderr, "[mmx] video: %dx224 (widescreen=%d, drawable=%dx%d)\n",
+          width, widescreen ? 1 : 0, drawable_width, drawable_height);
+}
+
 int X3Display_ComputeFrameWidth(int drawable_width, int drawable_height,
                                  bool widescreen) {
-  if (!widescreen || drawable_width <= 0 || drawable_height <= 0)
+  if (!widescreen || drawable_width <= 0 || drawable_height <= 0) {
+    announce_frame_width(256, drawable_width, drawable_height, 0);
     return 256;
+  }
 
   /* 224 * 6 / 7 preserves the SNES 7:6 pixel aspect while matching the
    * requested display aspect. Use 64-bit arithmetic for hostile window sizes. */
@@ -35,6 +50,7 @@ int X3Display_ComputeFrameWidth(int drawable_width, int drawable_height,
     width++;
   if (width & 1) width++;
   if (width > MMX_MAX_FRAME_WIDTH) width = MMX_MAX_FRAME_WIDTH;
+  announce_frame_width((int)width, drawable_width, drawable_height, 1);
   return ClampEven(width);
 }
 

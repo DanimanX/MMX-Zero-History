@@ -28,6 +28,30 @@ Lo que hay acá es todo el andamiaje alrededor de eso más el motor real
 compilando. La línea exacta entre "funciona" y "está escrito" está en
 [`docs/ESTADO.md`](docs/ESTADO.md), sin adornos.
 
+### Qué ves cuando jugás
+
+Esto es lo que cambia de verdad al abrir el juego, y es todo:
+
+- **El nombre**: la app es *MMX Zero History*, con icono y placa de arranque
+  propios.
+- **El campo 16:9** (342×224): HUD anclado a los lados, columnas nuevas de BG1
+  y BG2, ventanas de activación y dibujo de enemigos ensanchadas. Se apaga
+  desde `config.ini` (`Widescreen = 0`).
+- **El diagnóstico**: la pantalla de entrada de Android muestra la versión de
+  la build y el campo que el motor eligió, leídos de `native.log`.
+
+Y esto es lo que **no** cambia, porque está diseñado y no insertado: la
+historia de la Bóveda Ω, los ocho mavericks, las cápsulas errantes, el guion en
+chileno y la banda sonora **no están dentro del juego**. Si abrís el APK y ves
+la intro, el select de etapas y los jefes originales de Mega Man X3, es el
+comportamiento esperado de esta versión, no un fallo de instalación.
+
+El motor fijado trae un sistema de parches de texto/VRAM en tiempo de
+ejecución (`snes_text_xlate`, en `snesrecomp/runner/src`) que este proyecto
+**todavía no usa**: es la vía para traducir el guion sin tocar el cartucho, y
+necesita las tablas de glifos y las direcciones reales del ROM. Está anotado
+como el siguiente trabajo grande en [`docs/ESTADO.md`](docs/ESTADO.md).
+
 ## El ROM
 
 Tenés que poner tu propio dump, legalmente obtenido. Nada derivado del ROM se
@@ -173,7 +197,7 @@ binario no trae el juego, lo carga desde tu dump.
    cabecera de copiador si la trae.
 4. La app arranca el motor con el campo 16:9.
 
-![Pantalla de entrada en Android](docs/img/android-rom-setup.png)
+![Pantalla de entrada en Android: ROM verificado, build y campo 16:9](docs/img/android-rom-setup.png)
 
 Para capturar una pantalla de juego —la etapa 1, por ejemplo— con tu dump ya
 cargado:
