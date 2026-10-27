@@ -119,10 +119,17 @@ jobs:
           mkdir -p dist
           exe="build/MegaManX3SNESRecomp"
           if [ -f "${exe}.exe" ]; then exe="${exe}.exe"; fi
-          cp "$exe" "dist/$exe"
+          cp "$exe" "dist/$(basename "$exe")"
           cp README.md LICENSE VERSION dist/
           cp docs/ROM_README.txt dist/ROM_README.txt
-          cd dist && zip -r "../${{ matrix.artifact }}.zip" . >/dev/null
+          # zip existe en Linux y macOS; Git Bash en Windows no lo trae, pero
+          # sí bsdtar, que con -a arma un .zip a partir de la extension.
+          cd dist
+          if command -v zip >/dev/null 2>&1; then
+            zip -r "../${{ matrix.artifact }}.zip" . >/dev/null
+          else
+            tar -a -c -f "../${{ matrix.artifact }}.zip" .
+          fi
 
       - name: Subir artefacto
         uses: actions/upload-artifact@v4
