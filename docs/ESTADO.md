@@ -29,20 +29,27 @@ implementado". Acá está la línea entre las dos cosas, sin adornos.
   real, contenido armónico (ZCR 478–1480 Hz), duraciones 23–51 s.
 - **Arte del README.** Generado por código (`tools/make_brand_art.py`), sin
   material de Capcom.
+- **CI de escritorio en tres plataformas.** El workflow `Release` compiló el
+  setup host en Linux, Windows y macOS en runners reales, y los tres `.zip`
+  quedaron adjuntos a la release `v0.0.1`. El gate `Desktop host` corrió verde
+  en Linux (pruebas + compilación).
 
 ## Lo que está escrito pero NO ejecutado
 
 - **La app Android.** `android/` existe, con actividades, capa táctil y puente
   JNI, pero en la máquina donde se preparó esto no hay SDK ni NDK: nunca se
-  compiló ni se ejecutó en un teléfono. El job de CI de Android es manual y
-  experimental por eso mismo.
-- **CI de Windows y macOS.** Los workflows están escritos; solo el de Linux se
-  validó localmente de punta a punta.
+  compiló ni se ejecutó en un teléfono. El job de CI de Android es manual,
+  experimental y marcado `continue-on-error` por eso mismo. Tampoco se ha
+  corrido.
+- **`rom-build.yml`.** Es el workflow que arma el binario jugable leyendo tu
+  ROM desde un secreto. Está escrito y valida el SHA-256 antes de compilar,
+  pero nunca se ejecutó: requiere que el dueño del repositorio cargue
+  `MMX3_ROM_BASE64`.
 - **La integración de las cápsulas en el juego.** El barajado es correcto y
   probado, pero vive en Python, no dentro del binario. Conectarlo requiere la
   tabla de objetos por etapa y un hook de lectura de semilla en el código
   recompilado.
-- **La banda sonora dentro del juego.** Las pistas son MP3/Ogg reproducibles,
+- **La banda sonora dentro del juego.** Las pistas son Ogg Vorbis reproducibles,
   no música del motor de sonido de X3. Ver `MUSICA.md` para los dos caminos.
 
 ## Lo que NO existe y no se puede fabricar en una sesión

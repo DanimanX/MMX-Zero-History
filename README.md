@@ -186,8 +186,14 @@ cmake --build build --target MegaManX3SNESRecomp
 - **`release.yml`** — al empujar una etiqueta `v*`, publica los paquetes de las
   tres plataformas de escritorio con arte, banda sonora y el aviso de ROM.
 
-Solo el gate de Linux se validó localmente de punta a punta. Los jobs de
-Windows, macOS y Android están escritos, no verificados.
+Estado de cada uno al publicar la 0.0.1:
+
+- **Desktop host (Linux)**: verde — pruebas + compilación, corrida real en CI.
+- **Release**: verde en las tres plataformas. La etiqueta `v0.0.1` publicó
+  `MMXZeroHistory-linux-x86_64.zip`, `-windows-x86_64.zip` y `-macos-arm64.zip`
+  construidos en runners reales.
+- **rom-build**: escrito, nunca corrido (necesita el secreto con tu ROM).
+- **Android**: escrito, nunca corrido con éxito confirmado.
 
 ## Estado
 
