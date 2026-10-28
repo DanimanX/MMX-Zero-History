@@ -74,26 +74,85 @@ Reglas que el motor exige y los tests verifican:
   de debilidades y las reglas de las cápsulas errantes. Vive en
   `LoreActivity.java`, es texto de la app y no entra al cartucho.
 
-## 3. Lo que falta, y por qué
+## 3. El guion: overlay narrativo
 
-Insertar la historia, los jefes, las cápsulas, el guion y la música **dentro
-del juego** requiere datos que sólo se obtienen del ROM:
+Desde la 0.0.6 la historia, el guion, los textos de cápsula y los nombres de
+jefes **sí entran al juego**. No van por `[[rom_patch]]` porque son miles de
+bytes y cambiarían de tamaño; van por un camino propio que aprovecha el propio
+formato del cartucho.
 
-1. **Glifos y tablas de texto**: X3 guarda el texto con una codificación
-   propia sobre su fuente de tiles. Sin el dump no se puede deducir el mapa
-   carácter → byte, y adivinarlo escribe basura legible por el juego.
-2. **Direcciones de los bloques** (select de etapas, diálogos, nombres de
-   jefe): hay que localizarlos en el dump, con su `source_hex` exacto, para
-   que el parche esté guardado por contenido.
-3. **Gráficos**: los tiles de jefes y escenarios están comprimidos con el
+### Por qué se puede
+
+Mega Man X3 guarda su guion como **texto ASCII plano**, con `0x80 0x80` como
+salto de línea y comandos de un byte entre páginas:
+
+```
+1CC2B6  49 6e 20 74 68 65 20 79 65 61 72 20 32 31 58 58 2c  In the year 21XX,
+```
+
+Eso es una suerte enorme: no hay tabla de glifos que adivinar para el texto
+latino. Cada página es un tramo de bytes imprimibles con un largo fijo, y el
+motor dibuja lo que encuentra ahí. Reemplazar esa página por la nuestra no
+mueve un solo puntero.
+
+### Cómo se empaqueta
+
+```
+content/story_es.txt        guion en chileno, una línea por renglón
+tools/build_story.py        lee el dump, mide las páginas, empaqueta
+src/x3_story_data.c         generado: nuestro texto + direcciones + largos
+src/x3_story.c              aplica sobre la imagen cargada, tras verificar SHA-256
+```
+
+Tres invariantes, cada una verificada por un test:
+
+1. **Misma longitud de página.** El reemplazo mide exactamente lo que el tramo
+   original. Ningún puntero ni comando de control se mueve.
+2. **Sólo bytes de texto.** ASCII imprimible y `0x80`. Un solo byte de control
+   pisado rompería la página, así que el generador no puede emitirlo y el test
+   lo rechaza.
+3. **Ancho acotado a 22 columnas.** El motor **no envuelve** texto: una línea
+   más larga se corta. La tercera línea de la caja va centrada, y ahí 28
+   columnas ya pierden el último glifo — medido en el motor real con reglas de
+   ancho, no supuesto. 22 es el máximo seguro en ambas posiciones.
+
+### Qué cubre
+
+- **Intro** (20 páginas): la Bóveda Ω, el Eco de Wily, la foto de W-00.
+- **Acto I** (24 páginas): las ocho revisiones, Cero-Ω en la azotea.
+- **Cápsulas** (8 grupos): los ocho fragmentos de memoria, leídos por Salas.
+- **Acto II/III** (26 + 87 páginas): la revelación y el cierre del archivo.
+- **Tablas**: cast, los ocho jefes con POWER/SPEED, las ocho armas, el
+  marcador de jefe de etapa, y los rótulos del título y las opciones.
+
+### Qué NO cubre
+
+Los sprites, los mapas, la música del SPC y la lógica de los jefes siguen
+siendo los del cartucho. La historia nueva se cuenta con los personajes y los
+escenarios que X3 ya tiene. Dibujar a Cóndor Cobalto y programar su IA sigue
+siendo el trabajo largo de más abajo.
+
+### Regenerar
+
+Hace falta el dump, porque los largos de página se miden sobre él:
+
+```console
+python3 tools/build_story.py --rom mmx3.sfc          # reescribe el generado
+python3 tools/build_story.py --rom mmx3.sfc --check  # sólo informa
+```
+
+El generado **se versiona**: contiene únicamente nuestro texto, las
+direcciones y los largos — ningún byte del guion original. Eso permite
+compilar y testear el proyecto sin el dump.
+
+### Lo que queda por derivar del dump
+
+1. **Gráficos**: los tiles de jefes y escenarios están comprimidos con el
    esquema del juego; insertarlos requiere el compresor y espacio libre en el
    banco correcto.
-4. **Música**: los temas tendrían que ser secuencias del driver de X3, no PCM.
-
-El motor ya tiene el mecanismo para (2) y (3) sin tocar el cartucho
-(`[[rom_patch]]`, `[[vram_patch]]`, más `snes_rom_patch_apply` para IPS/BPS en
-variantes de contenido). Lo que falta es la derivación de direcciones, que es
-trabajo por título y exige el dump del dueño.
+2. **Música**: los temas tendrían que ser secuencias del driver de X3, no PCM.
+3. **Lógica de jefe**: rutinas de IA y colisión en 65816, con las tablas de
+   daño y el anillo de debilidades.
 
 Mientras tanto, el proyecto no finge: la app dice en pantalla qué cambia y
 qué no, y este documento es la lista de lo que queda.
@@ -102,9 +161,17 @@ qué no, y este documento es la lista de lo que queda.
 
 ```console
 python3 tools/test_content_patch.py    # 12 pruebas, sin ROM real
+bash tools/test_story_guard.sh         # política de identidad del overlay
+bash tools/test_story_apply.sh         # escribe con el dump bueno, nada con otro
+python3 tools/test_story_layout.py     # forma del generado, sin dump
 bash tools/test_display_width.sh
 bash tools/test_touch_controls.sh
 ```
+
+`test_story_apply.sh` enlaza `src/x3_story.c` y el generado contra un cartucho
+simulado de 2 MiB y comprueba las dos ramas: con otro digest no se escribe ni
+un byte, con el digest correcto se escriben todas las páginas y nada fuera de
+ellas.
 
 `test_content_patch.py` construye imágenes sintéticas de 2 MiB con la cabecera
 LoROM, así que prueba el motor sin distribuir datos del cartucho: aplicación,

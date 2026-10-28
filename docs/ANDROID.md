@@ -51,20 +51,25 @@ RomSetupActivity (launcher)
 ## Qué se juega (y qué no)
 
 El APK ejecuta el cartucho del jugador tal cual: recompilado, verificado e
-intacto. La historia nueva, los jefes, las cápsulas, el guion en chileno y la
-banda sonora están diseñados en `docs/` y **no insertados** en el juego. Lo que
-el proyecto aporta en pantalla es el nombre, el icono, la placa de arranque y
-el campo 16:9. La pantalla de entrada lo dice explícitamente y muestra la
+intacto. Lo que el proyecto cambia en pantalla: el nombre, el icono, la placa
+de arranque, el campo 16:9 y —desde la 0.0.6— **el guion completo**: prólogo,
+diálogos, cápsulas, final, nombres y stats de los ocho mavericks y los rótulos
+del menú del título. Los sprites de los jefes, los mapas nuevos y la banda
+sonora del SPC siguen sin insertarse. La pantalla de entrada lo dice explícitamente y muestra la
 versión de la build y el ancho de campo elegido, leídos de `native.log`
 (`[mmx] build=…`, `[mmx] video: 342x224 (widescreen=1, …)`).
 
 Desde la 0.0.5 ese mecanismo **sí está inicializado**: `src/x3_content.c`
 carga `content/zerohistory.toml` (extraído de los assets al arrancar) y el
 motor aplica sus parches sobre la copia en memoria del ROM, guardados por
-contenido. La app lo reporta en `native.log`:
+contenido. Desde la 0.0.6, antes de eso, `X3Story_Init()` escribe el guion
+(`src/x3_story_data.c`, compilado dentro del `.so`) sobre la misma copia. La app
+lo reporta en `native.log`:
 
 ```console
-adb shell cat /sdcard/Android/data/cl.zerohistory.mmx/files/native.log | grep contenido
+adb shell cat /sdcard/Android/data/cl.zerohistory.mmx/files/native.log | grep -E "historia|contenido"
+# [mmx] historia: 227/227 pagina(s) aplicadas sobre el ROM en memoria
+# [mmx] contenido: 1/1 parche(s) de ROM aplicados
 ```
 
 Detalle del formato y de lo que falta en [`CONTENIDO.md`](CONTENIDO.md).
@@ -133,7 +138,7 @@ El script configura CMake con `MMX_LLE_ONLY=ON` y SDL3, compila
 SDL, copia el catálogo de mods a `assets/mods`, genera/usa un keystore y corre
 `gradle assembleRelease`. Salida: `dist/MMXZeroHistory-android-<abi>.apk`.
 
-## Estado real (v0.0.5)
+## Estado real (v0.0.6)
 
 Verificado en un emulador Android 14 (x86_64, KVM):
 

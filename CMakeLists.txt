@@ -22,6 +22,7 @@ include(${SNESRECOMP_ROOT}/runner/runner.cmake)
 
 set(MMX_SOURCES
     src/main.c src/gen_stubs.c src/x3_display.c src/x3_content.c
+    src/x3_story.c src/x3_story_guard.c src/x3_story_data.c
     src/x3_cpu_infra.c src/x3_rtl.c src/x3_spc_player.c
     src/mods/x3_widescreen_plugin.c)
 

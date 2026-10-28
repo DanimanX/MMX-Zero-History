@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "snes_text_xlate.h"
+#include "x3_story.h"
 
 #ifndef X3_CONTENT_DEFAULT_TABLE
 #define X3_CONTENT_DEFAULT_TABLE "content/zerohistory.toml"
@@ -42,6 +43,10 @@ static void stats(char *out, size_t cap) {
 void X3Content_Init(void) {
   if (s_tried) return;
   s_tried = 1;
+
+  /* El overlay narrativo va primero: escribe sobre la imagen recién cargada,
+   * antes de que el guest lea una sola página del guion. */
+  X3Story_Init();
 
   const char *path = getenv("MMX_CONTENT_TABLE");
   if (!path || !*path) path = X3_CONTENT_DEFAULT_TABLE;

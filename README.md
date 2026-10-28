@@ -40,15 +40,31 @@ Esto es lo que cambia de verdad al abrir el juego, y es todo:
 - **El diagnóstico**: la pantalla de entrada de Android muestra la versión de
   la build y el campo que el motor eligió, leídos de `native.log`.
 
-Y esto es lo que **no** cambia todavía: la historia de la Bóveda Ω, los ocho
-mavericks, las cápsulas errantes, el guion en chileno y la banda sonora **no
-están dentro del juego**. Si abrís el APK y ves la intro, el select de etapas y
-los jefes originales de Mega Man X3, es el comportamiento esperado de esta
-versión, no un fallo de instalación.
+- **El guion** (desde la 0.0.6): el prólogo de la Bóveda Ω, los diálogos, los
+  textos de las ocho cápsulas, el final y los nombres de los ocho mavericks con
+  sus stats y sus armas, todo en chileno y dibujado por la caja de texto del
+  propio juego. El menú del título dice `EMPEZAR / CLAVE / OPCIONES`.
 
-### El contenido ya se aplica al ROM (lo que se puede verificar)
+Y esto es lo que **no** cambia todavía: los sprites de los jefes, los mapas
+nuevos y la banda sonora **no están dentro del juego**. Si abrís el APK y ves
+los jefes originales de Mega Man X3 con los nombres nuevos, es el
+comportamiento esperado de esta versión, no un fallo de instalación: la
+historia se cuenta con los personajes y los escenarios que el cartucho ya
+tiene.
 
-Desde la 0.0.5 hay una tabla de contenido propia,
+### El guion se aplica al ROM (lo que se puede verificar)
+
+Desde la 0.0.6 el guion entra al juego. `tools/build_story.py` lee tu dump,
+localiza las páginas de texto del cartucho y empaqueta `content/story_es.txt`
+en ellas sin mover un puntero; `src/x3_story.c` las aplica sobre la copia en
+memoria, sólo después de comprobar el SHA-256.
+
+```console
+adb shell cat /sdcard/Android/data/cl.zerohistory.mmx/files/native.log | grep historia
+# [mmx] historia: 227/227 pagina(s) aplicadas sobre el ROM en memoria
+```
+
+Desde la 0.0.5 hay además una tabla de contenido propia,
 [`content/zerohistory.toml`](content/zerohistory.toml), que el motor aplica
 sobre la **copia en memoria** de tu dump después de verificar su identidad:
 

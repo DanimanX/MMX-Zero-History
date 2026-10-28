@@ -1,4 +1,4 @@
-# Estado real de la versión 0.0.5
+# Estado real de la versión 0.0.6
 
 Este documento existe porque es fácil confundir "está documentado" con "está
 implementado". Acá está la línea entre las dos cosas, sin adornos.
@@ -16,6 +16,12 @@ implementado". Acá está la línea entre las dos cosas, sin adornos.
 - **Soporte de mando en escritorio.** Viene del host de `snesrecomp` por
   `SDL_GameController` (Xbox, DualShock, 8BitDo), con gestos de rewind y
   launcher configurables. No lo escribimos nosotros y no lo tocamos.
+- **El guion dentro del juego (0.0.6).** `src/x3_story_data.c` lleva 227
+  páginas: intro, Acto I, ocho cápsulas, Acto II/III, tablas de jefes y armas,
+  y los rótulos del título. Verificado en el motor real: el prólogo y los
+  diálogos salen en la caja de texto del juego, y `EMPEZAR / CLAVE / OPCIONES`
+  reemplazan el menú del título. Con un dump distinto no se escribe nada y el
+  log lo dice.
 - **Cápsulas errantes — especificación ejecutable.** `tools/capsule_shuffle.py`
   pasa sus 7 pruebas: biyección, determinismo, semilla fija de speedrun,
   derivación por slot y rechazo de modos desconocidos.
@@ -52,20 +58,50 @@ implementado". Acá está la línea entre las dos cosas, sin adornos.
   quedaron adjuntos a la release `v0.0.1`. El gate `Desktop host` corrió verde
   en Linux (pruebas + compilación).
 
-## Qué se ve al jugar (0.0.5)
+## Qué se ve al jugar (0.0.6)
 
-Esta es la respuesta corta a «instalé el APK y arranca el Mega Man X3
-original». Es correcto: el juego **es** el cartucho original, ejecutado por el
-intérprete LLE. Lo único que el proyecto cambia en pantalla es:
+El juego sigue siendo el cartucho original ejecutado por el intérprete LLE, con
+su motor, sus sprites y sus escenarios. Lo que el proyecto cambia en pantalla:
 
 - el nombre, el icono y la placa de arranque de la app;
 - el campo 16:9 (342×224) con el HUD y las ventanas de objetos ajustadas;
 - la pantalla de entrada, con la importación verificada del ROM y el
-  diagnóstico (`build=`, `video: 342x224`).
+  diagnóstico (`build=`, `video: 342x224`);
+- **el guion**: prólogo, diálogos, cápsulas, final, nombres de los ocho jefes,
+  sus stats y las armas, todo en chileno y dibujado por el motor con su propia
+  caja de texto;
+- **el menú del título**: `EMPEZAR / CLAVE / OPCIONES`, y `TECLAS` / `SONIDO`
+  en opciones.
 
-No hay historia nueva, jefes nuevos, cápsulas, guion en chileno ni banda sonora
-dentro del juego. Todo eso está diseñado en `docs/` y **no insertado**; el
-detalle de por qué es un trabajo de meses está más abajo, en «Lo que NO existe».
+Lo que sigue sin cambiar: los sprites, los mapas, la música del SPC y la
+lógica de los jefes. La historia nueva se cuenta con lo que el cartucho ya
+tiene; dibujar a los ocho mavericks sigue siendo el trabajo largo de más abajo.
+
+### La historia ya está en el juego (0.0.6)
+
+El prólogo, los diálogos, los textos de las cápsulas, el final y los nombres de
+los ocho jefes salen del motor. No es una capa encima: son las páginas de texto
+del propio cartucho, reemplazadas por las nuestras.
+
+```
+[mmx] historia: 227/227 pagina(s) aplicadas sobre el ROM en memoria
+```
+
+El cartucho guarda el guion como ASCII plano con `0x80 0x80` entre líneas, así
+que cada página se puede sustituir conservando su largo exacto en bytes: ningún
+puntero ni comando de control se mueve. `tools/build_story.py` empaqueta
+`content/story_es.txt` en `src/x3_story_data.c`, y `src/x3_story.c` lo aplica
+sobre la imagen cargada **sólo si el SHA-256 es el del dump soportado**.
+
+Las tres invariantes están fijadas por tests, no por disciplina:
+
+- misma longitud de página que el original;
+- sólo ASCII imprimible y `0x80` (un byte de control pisado rompería la página);
+- ninguna línea de más de 22 columnas — el motor no envuelve texto, y la
+  tercera línea de la caja va centrada, donde 28 columnas ya se cortan. Se
+  midió en el motor real.
+
+Lo que sigue igual: sprites, mapas, música del SPC y la lógica de los jefes.
 
 ### El contenido ya se aplica (0.0.5)
 

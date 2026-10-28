@@ -1,0 +1,362 @@
+{
+  "rom_sha256": "65b03268afac296330e8ff8d60dd0825879e13ed658b37713c034a3bd074f1d7",
+  "source": "content/story_es.txt",
+  "pages": 227,
+  "bytes": 9212,
+  "sections": {
+    "intro": {
+      "pages": 20,
+      "lines": 35,
+      "authored": 23,
+      "address": "0x1CC2B6-0x1CC6A9"
+    },
+    "act1": {
+      "pages": 24,
+      "lines": 52,
+      "authored": 37,
+      "address": "0x1CC6A9-0x1CCBFB"
+    },
+    "mid": {
+      "pages": 26,
+      "lines": 62,
+      "authored": 38,
+      "address": "0x1CD425-0x1CDA0B"
+    },
+    "final": {
+      "pages": 87,
+      "lines": 142,
+      "authored": 94,
+      "address": "0x1CDA0B-0x1CEB13"
+    },
+    "capsule1": {
+      "pages": 2,
+      "lines": 8,
+      "authored": 6,
+      "address": "0x1CCC26"
+    },
+    "capsule2": {
+      "pages": 3,
+      "lines": 9,
+      "authored": 7,
+      "address": "0x1CCD02"
+    },
+    "capsule3": {
+      "pages": 3,
+      "lines": 8,
+      "authored": 6,
+      "address": "0x1CCE2A"
+    },
+    "capsule4": {
+      "pages": 5,
+      "lines": 11,
+      "authored": 7,
+      "address": "0x1CCF17"
+    },
+    "capsule5": {
+      "pages": 2,
+      "lines": 7,
+      "authored": 5,
+      "address": "0x1CD09B"
+    },
+    "capsule6": {
+      "pages": 2,
+      "lines": 7,
+      "authored": 5,
+      "address": "0x1CD160"
+    },
+    "capsule7": {
+      "pages": 3,
+      "lines": 7,
+      "authored": 7,
+      "address": "0x1CD23D"
+    },
+    "capsule8": {
+      "pages": 3,
+      "lines": 7,
+      "authored": 6,
+      "address": "0x1CD36A"
+    },
+    "table_0x1CEB13": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEB13"
+    },
+    "table_0x1CEE45": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEE45"
+    },
+    "table_0x1CEE83": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEE83"
+    },
+    "table_0x1CEEC6": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEEC6"
+    },
+    "table_0x1CEF06": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEF06"
+    },
+    "table_0x1CEF46": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEF46"
+    },
+    "table_0x1CEF84": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEF84"
+    },
+    "table_0x1CEFC4": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEFC4"
+    },
+    "table_0x1CF002": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF002"
+    },
+    "table_0x1CEE59": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEE59"
+    },
+    "table_0x1CEE6B": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEE6B"
+    },
+    "table_0x1CEE9B": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEE9B"
+    },
+    "table_0x1CEEAD": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEEAD"
+    },
+    "table_0x1CEEDC": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEEDC"
+    },
+    "table_0x1CEEEE": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEEEE"
+    },
+    "table_0x1CEF1C": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEF1C"
+    },
+    "table_0x1CEF2E": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEF2E"
+    },
+    "table_0x1CEF5A": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEF5A"
+    },
+    "table_0x1CEF6C": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEF6C"
+    },
+    "table_0x1CEF9A": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEF9A"
+    },
+    "table_0x1CEFAC": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEFAC"
+    },
+    "table_0x1CEFD8": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEFD8"
+    },
+    "table_0x1CEFEA": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CEFEA"
+    },
+    "table_0x1CF014": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF014"
+    },
+    "table_0x1CF026": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF026"
+    },
+    "table_0x1CF291": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF291"
+    },
+    "table_0x1CF2A8": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF2A8"
+    },
+    "table_0x1CF2BD": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF2BD"
+    },
+    "table_0x1CF2D2": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF2D2"
+    },
+    "table_0x1CF2E5": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF2E5"
+    },
+    "table_0x1CF2FB": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF2FB"
+    },
+    "table_0x1CF312": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF312"
+    },
+    "table_0x1CF327": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF327"
+    },
+    "table_0x1CF4C2": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x1CF4C2"
+    },
+    "table_0x030FE8": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x030FE8"
+    },
+    "table_0x030FF7": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x030FF7"
+    },
+    "table_0x031004": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x031004"
+    },
+    "table_0x031014": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x031014"
+    },
+    "table_0x031023": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x031023"
+    },
+    "table_0x031030": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x031030"
+    },
+    "table_0x031040": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x031040"
+    },
+    "table_0x03104F": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x03104F"
+    },
+    "table_0x03105C": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x03105C"
+    },
+    "table_0x0311AB": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x0311AB"
+    },
+    "table_0x03123E": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x03123E"
+    },
+    "table_0x0312D1": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x0312D1"
+    },
+    "table_0x031332": {
+      "pages": 1,
+      "lines": 1,
+      "authored": 1,
+      "address": "0x031332"
+    }
+  }
+}

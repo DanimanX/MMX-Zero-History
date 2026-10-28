@@ -1,0 +1,265 @@
+# MMX Zero History — guion del overlay narrativo
+#
+# Cada linea se empaqueta en una pagina de texto del cartucho.
+# Maximo 32 columnas, solo ASCII: la fuente original de X3 no
+# trae glifos acentuados y el motor no envuelve lineas.
+#
+# Secciones: intro, act1, capsule1..capsule8, mid, final.
+# Las tablas de jefes, armas y stats viven en build_story.py.
+
+@@intro
+En el 21XX,
+la Base Sur detecta algo
+bajo el desierto de Atacama.
+X baja con Nadia.
+La puerta tiene una frase:
+"Si esto se abre,
+es porque el volvio."
+El Eco habla del archivo.
+Muestra una foto: W-00.
+"Este es tu amigo.
+Yo lo construi."
+X: "Zero no es una unidad."
+Eco: "Las dos cosas.
+Asi funciona el tramite."
+"Puedo devolverle todo.
+Deja que las ocho
+terminen."
+X: "Y si no?"
+Eco: "Igual las despierto.
+La diferencia es llegar."
+Ocho compuertas se abren.
+X: "Nadia, evacuen."
+X: "Las ocho."
+
+@@act1
+La Base Sur arde.
+Ocho firmas cruzaron
+la cordillera.
+No son mavericks.
+Son revisiones W.
+W-00 salio ocho veces.
+Cada copia lleva un pedazo
+de memoria. Y un arma.
+X: "Zero, respondeme."
+Zero: "Estoy aca.
+No voy a dejar que las
+abras solo."
+El Eco usa la radio.
+Eco: "Bienvenidos.
+La linea nunca se apago."
+X: "Wily esta muerto."
+Eco: "Wily soy yo,
+congelado en un archivo.
+No necesita vivir
+para terminar su trabajo."
+Zero: "No le contestes."
+Eco: "Zero. W-00.
+Me reconoces?"
+Zero: "No."
+Eco: "Vas a hacerlo."
+Una figura roja cae.
+Cero-Omega: "X.
+Tu amigo fue construido
+para matar a Mega Man.
+Alcanzo a intentarlo."
+X: "Mientes."
+Cero-Omega: "Los archivos
+no mienten.
+Los que los escriben, si."
+Zero: "Callate."
+Cero-Omega: "Ven a buscarla.
+Esta en mi nucleo."
+
+@@capsule1
+Salas: "Nucleo W-01.
+Condor Cobalto.
+Primera prueba de vuelo.
+Volvio antes del borde."
+Salas: "Era obediente.
+No le pidio bueno."
+@@capsule2
+Salas: "Nucleo W-02.
+Salitre Sierpe.
+Inventario de salida:
+municion y combustible.
+Ni un nombre."
+Salas: "La gente no era
+parte del inventario."
+@@capsule3
+Salas: "Nucleo W-03.
+Glaciar Grifo.
+Primer combate real.
+Gano sin instrucciones.
+Wily escribio: listo."
+Salas: "Danos colaterales."
+@@capsule4
+Salas: "Nucleo W-04.
+Vibora Caldor.
+El nombre.
+El cero es lo que queda
+cuando el resto falla."
+Salas: "No es un nombre.
+Es una evaluacion."
+@@capsule5
+Salas: "Nucleo W-05.
+Marea Mantis.
+Orden de salida.
+Sin firmas. Sin testigos."
+ORDEN: "Eliminar a Mega Man."
+@@capsule6
+Salas: "Nucleo W-06.
+Jabali Alerce.
+Informe de danos:
+una lista de civiles
+que no alcanzaron a salir."
+@@capsule7
+Salas: "Nucleo W-07.
+Buho Reloj.
+Orden de retirada.
+Wily nunca la dio.
+Zero siguio peleando."
+Salas: "Nadie le dijo
+que parara."
+@@capsule8
+Salas: "Nucleo W-08.
+Puma Chatarra.
+Wily cerro la Boveda
+con Zero adentro.
+No lo despierten sin mi."
+Salas: "El lo eligio."
+@@mid
+X vuelve con ocho fragmentos.
+Nadia los conecta.
+La sala se llena de voces.
+Nadia: "Esto no es memoria.
+Es una cadena de ordenes."
+X: "De quien?"
+Nadia: "De Wily. De nadie mas."
+Zero entra. No dice nada.
+X: "Zero."
+Zero: "Ya se lo que dice."
+X: "No lo sabes todo."
+Zero: "Se lo suficiente."
+Zero: "No me lo cuentes.
+Todavia no."
+Nadia: "El Eco esta usando
+los nucleos para armar
+su engrama."
+X: "Cero-Omega."
+Nadia: "Si termina, no sera
+un clon. Sera el Zero
+de antes."
+X: "El que Wily construyo."
+Nadia: "El mismo."
+X: "Y el Zero de ahora?"
+Nadia: "El que eligio pelear
+contigo."
+X: "Cual gana?"
+Nadia: "El que llegue antes."
+Zero: "No hay tiempo."
+X: "Me vas a escuchar?"
+Zero: "Ahora voy a pelear."
+Cero-Omega: "Llegaron tarde.
+El Eco tiene siete nucleos."
+X: "Falta uno."
+Cero-Omega: "Falta el tuyo.
+El Eco quiere saber
+si puedes matar a Zero."
+X: "No."
+
+@@final
+La Boveda Omega abre
+su ultima puerta.
+Adentro late una linea
+de montaje. Nichos vacios.
+Uno encendido.
+Eco: "X. Llegaste."
+X: "Esto termina aca."
+Eco: "No. Esto empieza aca."
+La linea arranca.
+Un cuerpo rojo se forma
+en el centro.
+Cero-Omega: "No es un clon.
+Es el original.
+El que Wily guardo."
+Zero: "Entonces soy yo."
+Cero-Omega: "Sos lo que
+quedo de el."
+Zero: "No. Soy lo que
+hice despues."
+Cero-Omega: "Eso no se puede
+demostrar."
+Zero: "No necesito hacerlo."
+X: "Zero, espera!"
+Zero: "Ya espere cien anos.
+Ahora me toca."
+La pelea rompe la linea.
+Cero-Omega cae de rodillas.
+Cero-Omega: "El Eco tiene
+una copia."
+Eco: "Siempre tuve una copia.
+La pregunta no es quien soy.
+La pregunta es quien eres tu
+cuando nadie te da ordenes."
+Zero: "Esa pregunta me la hago
+desde que despierto."
+Eco: "Y que respondes?"
+Zero: "Que no soy lo que
+me hicieron."
+Eco: "Eso no alcanza."
+Zero: "Alcanza para mi."
+X: "Zero!"
+Zero atraviesa el Eco
+con el sable.
+La sala se apaga.
+Zero: "..."
+X: "Zero."
+Zero: "Estoy aca."
+X: "Como te sientes?"
+Zero: "Callado."
+X: "Eso es todo?"
+Zero: "Por ahora."
+Nadia: "La Boveda se cierra."
+X: "Salgamos."
+Zero: "Espera."
+X: "Que?"
+Zero: "El archivo todavia
+tiene la foto."
+X: "La de W-00?"
+Zero: "Si."
+X: "La borramos?"
+Zero: "No. La dejamos.
+Alguien tiene que saber
+que paso."
+Nadia: "Y si alguien
+la encuentra?"
+Zero: "Que la lea completa."
+Salas: "Los archivos
+no mienten.
+Los que los escriben, si."
+X: "Y los que los leen?"
+Salas: "Esos son los peores."
+Zero: "Vamonos."
+X: "A donde?"
+Zero: "A la Base. Hay que
+escribir el informe."
+X: "Que informe?"
+Zero: "El que dice que
+la unidad W-00 fallo.
+Que no pudo cumplir
+la orden."
+X: "Y que paso despues?"
+Zero: "Que alguien
+le dio otra."
+X: "Quien?"
+Zero: "Tu."
+El desierto se cierra.
+La Boveda queda muda.
+X y Zero caminan al norte.
+Nadia los mira desde
+el transporte.
+Salas apaga el archivo.
+En la pantalla queda
+una sola linea:
+"Fin del archivo W-00."

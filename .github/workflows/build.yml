@@ -38,6 +38,12 @@ jobs:
         run: bash tools/test_display_width.sh
       - name: Contenido — aplicación de parches al ROM
         run: python3 tools/test_content_patch.py
+      - name: Historia — política de identidad del overlay
+        run: bash tools/test_story_guard.sh
+      - name: Historia — aplicación y rechazo del overlay
+        run: bash tools/test_story_apply.sh
+      - name: Historia — forma de los datos generados
+        run: python3 tools/test_story_layout.py
       - name: Barajado de ejemplo (speedrun, semilla 0)
         run: python3 tools/capsule_shuffle.py --mode speedrun
 
